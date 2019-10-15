@@ -72,6 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>C:\Users\Kyle Muldoon\source\repos\2D_Engine_glut\2D_Engine_P1\2D_Engine_P1\freeglut\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\Kyle Muldoon\source\repos\2D_Engine_glut\2D_Engine_P1\2D_Engine_P1\freeglut\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -95,6 +97,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -152,6 +155,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="2D_Engine_P1.cpp" />
+    <ClCompile Include="exampleCode.cpp" />
+    <ClCompile Include="OpenGl Playgorund.cpp" />
+    <ClCompile Include="refined.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="emptyClass.h" />
+    <ClInclude Include="FIO.h" />
+    <ClInclude Include="Point.h" />
+    <ClInclude Include="Pointf.h" />
+    <ClInclude Include="Polygon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
