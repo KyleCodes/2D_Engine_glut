@@ -21,7 +21,7 @@ float pixelSize;
 int winHeight, winWidth;
 
 	// hold points for line drawing 
-Point start, end;
+Point START, END;
 
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -35,7 +35,7 @@ void printDebug(Point, Point);
 	/* My Funcs */
 int roundFloat(const float);
 void lineDDA();
-void lineBresenham();
+void lineBres();
 
 /* OPENGL FUNCS */
 void init();
@@ -69,6 +69,15 @@ void main(int argc, char** argv)
 	winWidth = (int)(gridWidth * pixelSize);
 
 	////////////////////////////
+	// VARS SETUP
+	////////////////////////////
+	
+		// Set start / end points for line draw algs
+	START = Point(5, 95);
+	END = Point(95, 5);
+
+
+	////////////////////////////
 	// GLUT SETUP
 	////////////////////////////
 
@@ -81,7 +90,7 @@ void main(int argc, char** argv)
 	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
-	glutDisplayFunc(display); //rendering calls here
+	glutDisplayFunc(lineDDA); //rendering calls here
 	glutReshapeFunc(reshape); //update GL on window size change
 	glutMouseFunc(mouse);     //mouse button events
 	glutMotionFunc(motion);   //mouse movement events
@@ -128,6 +137,48 @@ void printDebug(Point start, Point end)
 // DRAWING ALGORITHMS
 ////////////////////////////
 
+/* DDA Line Draw */
+void lineDDA()
+{
+	Point curr = START;
+	Point d = Point();
+
+	d.x = END.x - START.x;
+	d.y = END.y - START.y;
+
+	double steps;
+	float xInc, yInc;
+	if (fabs(d.x) > fabs(d.y))
+		steps = fabs(d.x);
+	else
+		steps = fabs(d.y);
+
+	xInc = d.x / (float)steps;
+	yInc = d.y / (float)steps;
+
+
+	//clears the screen
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//clears the opengl Modelview transformation matrix
+	glLoadIdentity();
+	drawPix(curr);
+
+	for (int i = 0; i < steps; i++)
+	{
+		curr.x += xInc;
+		curr.y += yInc;
+		drawPix(curr);
+	}
+
+	glutSwapBuffers();
+	check();
+}
+
+/* Bresenham Line Draw */
+void lineBres()
+{
+
+}
 
 ////////////////////////////
 // OPENGL ENGINE FUNCS
@@ -137,7 +188,7 @@ void printDebug(Point start, Point end)
 void init()
 {
 	// Set default background color for resetting screen
-	glClearColor(1.0, 1.0, 1.0, 0.0);
+	glClearColor(1.0, 0.0, 0.0, 0.0);
 	
 	// Check for errors
 	check();
@@ -180,12 +231,11 @@ void drawPix(Point p)
 	glBegin(GL_POINTS);
 
 	// Set RGB color of the point
-	glColor3f(.2, .2, 1.0);
+	glColor3f(1.0, 1.0, 1.0);
 	
 	// Specify vertex location
 	glVertex3f(p.x + .5, p.y + .5, 0);
 	glEnd;
-
 }
 
 /* Is called when display size changes, including initial creation of the display */
