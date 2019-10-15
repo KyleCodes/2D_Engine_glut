@@ -73,8 +73,8 @@ void main(int argc, char** argv)
 	////////////////////////////
 	
 		// Set start / end points for line draw algs
-	START = Point(5, 95);
-	END = Point(95, 5);
+	START = Point(5, 5);
+	END = Point(95, 95);
 
 
 	////////////////////////////
@@ -90,7 +90,7 @@ void main(int argc, char** argv)
 	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
-	glutDisplayFunc(lineDDA); //rendering calls here
+	glutDisplayFunc(lineBres); //rendering calls here
 	glutReshapeFunc(reshape); //update GL on window size change
 	glutMouseFunc(mouse);     //mouse button events
 	glutMotionFunc(motion);   //mouse movement events
@@ -177,7 +177,48 @@ void lineDDA()
 /* Bresenham Line Draw */
 void lineBres()
 {
+	Point curr = Point();
+	Point d = Point();
 
+	d.x = END.x - START.x;
+	d.y = END.y - START.y;
+
+	int p = 2 * d.y - d.x;
+	int twoDy = 2 * d.y;
+	int twoDyMinusDx = 2 * (d.y - d.x);
+
+
+	if (START.x > END.x)
+	{
+		curr.x = END.x;
+		curr.y = END.y;
+		END = START;
+	}
+	else
+	{
+		curr.x = START.x;
+		curr.y = START.y;
+	}
+
+	//clears the screen
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//clears the opengl Modelview transformation matrix
+	glLoadIdentity();
+	drawPix(curr);
+	while (curr.x < END.x)
+	{
+		curr.x++;
+		if (p < 0)
+			p += twoDy;
+		else
+		{
+			curr.y++;
+			p += twoDyMinusDx;
+		}
+		drawPix(curr);
+	}
+	glutSwapBuffers();
+	check();
 }
 
 ////////////////////////////
