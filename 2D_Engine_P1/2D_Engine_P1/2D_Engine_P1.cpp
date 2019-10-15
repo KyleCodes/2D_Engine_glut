@@ -73,12 +73,12 @@ void main(int argc, char** argv)
 	////////////////////////////
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	/*initialize variables, allocate memory, create buffers, etc. */
 	//create window of size (win_width x win_height
 	glutInitWindowSize(winWidth, winHeight);
 	//windown title is "glut demo"
-	glutCreateWindow("@D Graphics Engine");
+	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
 	glutDisplayFunc(display); //rendering calls here
@@ -107,8 +107,8 @@ void main(int argc, char** argv)
 void init()
 {
 	// Set default background color for resetting screen
-	glClearColor(1.0, 1.0, 1.0, 1.0);
-
+	glClearColor(1.0, 1.0, 1.0, 0.0);
+	
 	// Check for errors
 	check();
 }
@@ -123,18 +123,15 @@ void idle()
 /* render the screen */
 void display()
 {
-	// clear the screen
-	glClear(GL_COLOR_BUFFER_BIT);
-
+	//clears the screen
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
 
-	// draw every pixel on the screen
+	//draws every other pixel on the screen
 	Point curr;
-	for (int j = 0; j < gridHeight; j++)
-	{
-		for (int i = 0; i < gridWidth; i++)
-		{
+	for (int j = 0; j < gridHeight; j += 2) {
+		for (int i = 0; i < gridWidth; i += 2) {
 			curr = Point(i, j);
 			drawPix(curr);
 		}
@@ -142,8 +139,7 @@ void display()
 
 	//blits the current opengl framebuffer on the screen
 	glutSwapBuffers();
-	
-	//check for opengl errors
+	//checks for opengl errors
 	check();
 }
 
@@ -210,7 +206,7 @@ void key(unsigned char ch, int x, int y)
 void mouse(int button, int state, int x, int y)
 {
 	//print the pixel location, and the grid location
-	printf("MOUSE AT PIXEL: %d %d, GRID: %d %d\n", x, y, (int)(x / pixel_size), (int)((win_height - y) / pixel_size));
+	printf("MOUSE AT PIXEL: %d %d, GRID: %d %d\n", x, y, (int)(x / pixelSize), (int)((winHeight - y) / pixelSize));
 	switch (button)
 	{
 	case GLUT_LEFT_BUTTON: //left button
