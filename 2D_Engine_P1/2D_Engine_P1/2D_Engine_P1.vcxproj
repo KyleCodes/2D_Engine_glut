@@ -155,9 +155,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="2D_Engine_P1.cpp" />
-    <ClCompile Include="exampleCode.cpp" />
-    <ClCompile Include="OpenGl Playgorund.cpp" />
-    <ClCompile Include="refined.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="emptyClass.h" />

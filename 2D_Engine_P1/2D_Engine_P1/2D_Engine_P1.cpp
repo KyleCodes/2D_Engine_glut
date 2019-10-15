@@ -1,20 +1,100 @@
-// 2D_Engine_P1.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
+#include <Windows.h>
+#include <GL/glut.h> 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include <iostream>
+#include "Point.h"
+#include "Pointf.h"
 
-int main()
+using namespace std;
+
+////////////////////////////////////////////////////////////////////
+// GLOBAL VARIABLES
+////////////////////////////////////////////////////////////////////
+
+	// Hold num of pixels in the grid,size of pixel
+int gridWidth, gridHeight;
+float pixelSize;
+
+	// Store window info
+int winHeight, winWidth;
+
+	// hold points for line drawing 
+Point start, end;
+
+////////////////////////////////////////////////////////////////////
+// FUNCTION PROTOTYPES
+////////////////////////////////////////////////////////////////////
+
+	/* OPENGL FUNCS */
+void init();
+void idle();
+void display();
+void draw_pix(int x, int y);
+void reshape(int width, int height);
+void key(unsigned char ch, int x, int y);
+void mouse(int button, int state, int x, int y);
+void motion(int x, int y);
+void check();
+
+	/* My Funcs */
+int roundFloat(const float);
+void lineDDA();
+void lineBresenham();
+GLenum errorCheck();
+
+	/* Menu Funcs */
+void printMenu();
+
+
+////////////////////////////////////////////////////////////////////
+// START OF EXECUTION
+////////////////////////////////////////////////////////////////////
+void main(int argc, char** argv)
 {
-    std::cout << "Hello World!\n";
+	////////////////////////////
+	// WINDOW SETUP
+	////////////////////////////
+
+		// Assign number of grid elements
+	gridWidth = 100;
+	gridHeight = 100;
+
+		// Assign dimension of single pixel
+	pixelSize = 5.0;
+
+		// Derive and assign Resolution
+	winHeight = (int)(gridHeight * pixelSize);
+	winWidth = (int)(gridWidth * pixelSize);
+
+	////////////////////////////
+	// GLUT SETUP
+	////////////////////////////
+
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	/*initialize variables, allocate memory, create buffers, etc. */
+	//create window of size (win_width x win_height
+	glutInitWindowSize(winWidth, winHeight);
+	//windown title is "glut demo"
+	glutCreateWindow("@D Graphics Engine");
+
+	/*defined glut callback functions*/
+	glutDisplayFunc(display); //rendering calls here
+	glutReshapeFunc(reshape); //update GL on window size change
+	glutMouseFunc(mouse);     //mouse button events
+	glutMotionFunc(motion);   //mouse movement events
+	glutKeyboardFunc(key);    //Keyboard events
+	glutIdleFunc(idle);       //Function called while program is sitting "idle"
+
+	//initialize opengl variables
+	init();
+	//start glut event loop
+	glutMainLoop();
 }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
 
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+////////////////////////////////////////////////////////////////////
+// FUNCTION DEFINITIONS
+////////////////////////////////////////////////////////////////////

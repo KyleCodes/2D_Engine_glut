@@ -18,15 +18,6 @@
     <ClCompile Include="2D_Engine_P1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="exampleCode.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OpenGl Playgorund.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="refined.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="emptyClass.h">
