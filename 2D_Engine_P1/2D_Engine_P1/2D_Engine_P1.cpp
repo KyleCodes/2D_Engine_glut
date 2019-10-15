@@ -27,7 +27,17 @@ Point start, end;
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
 
-	/* OPENGL FUNCS */
+/* Menu Funcs */
+void printMenu();
+void printDebug(Point, Point);
+
+
+	/* My Funcs */
+int roundFloat(const float);
+void lineDDA();
+void lineBresenham();
+
+/* OPENGL FUNCS */
 void init();
 void idle();
 void display();
@@ -37,16 +47,6 @@ void key(unsigned char ch, int x, int y);
 void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
 void check();
-
-	/* My Funcs */
-int roundFloat(const float);
-void lineDDA();
-void lineBresenham();
-GLenum errorCheck();
-
-	/* Menu Funcs */
-void printMenu();
-
 
 ////////////////////////////////////////////////////////////////////
 // START OF EXECUTION
@@ -98,6 +98,36 @@ void main(int argc, char** argv)
 ////////////////////////////////////////////////////////////////////
 // FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////
+
+////////////////////////////
+// MENU FUNCS
+////////////////////////////
+void printMenu()
+{
+	cout << "/////////////////////////////" << endl;
+	cout << "     Pick Draw Algorithm     " << endl;
+	cout << endl;
+	cout << "    1) Bresenham Line Draw   " << endl;
+	cout << "    2) DDA Line Draw         " << endl;
+	cout << "    3) ..                    " << endl;
+	cout << endl;
+	cout << "    4) Quit                  " << endl;
+	cout << endl;
+	cout << "\t";
+}
+
+void printDebug(Point start, Point end)
+{
+	//int size = sizeof(arr) / sizeof(arr[0]);
+	cout << "start point: x=" << start.x << " y=" << start.y << endl;
+	cout << "end point  : x=" << end.x << " y=" << end.y << endl;
+	cout << endl;
+}
+
+////////////////////////////
+// DRAWING ALGORITHMS
+////////////////////////////
+
 
 ////////////////////////////
 // OPENGL ENGINE FUNCS
