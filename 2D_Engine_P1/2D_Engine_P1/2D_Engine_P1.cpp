@@ -1,3 +1,11 @@
+/*
+	TODO
+	- add all cases for slope in lineBres
+	- add user interactivity
+	- read about other draw algs
+	- design classes for cfg, picture processing
+*/
+
 #include <Windows.h>
 #include <GL/glut.h> 
 #include <stdio.h>
@@ -10,7 +18,7 @@
 using namespace std;
 
 ////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES
+// GLOBAL VARIABLES -- all drawable objects will be stored here
 ////////////////////////////////////////////////////////////////////
 
 	// Hold num of pixels in the grid,size of pixel
@@ -53,6 +61,19 @@ void check();
 ////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
 {
+	////////////////////////////
+	// COLLECT CFG INFO 
+	////////////////////////////
+	
+	// collect line draw info
+	// select shapes to load from file
+	// select clipping info
+	// select transformations for each shape
+	// package these options into a cfg object
+	// pass cfg object to drawing engine
+
+
+
 	////////////////////////////
 	// WINDOW SETUP
 	////////////////////////////
