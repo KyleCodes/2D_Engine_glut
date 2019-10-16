@@ -70,7 +70,8 @@ void main(int argc, char** argv)
 	// select clipping info
 	// select transformations for each shape
 	// package these options into a cfg object
-	// pass cfg object to drawing engine
+	// use fio to load polygon info into cfg object
+	// pass cfg object into drawing engine
 
 
 
