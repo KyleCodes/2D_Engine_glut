@@ -30,6 +30,7 @@ int winHeight, winWidth;
 
 	// hold points for line drawing 
 Point START, END;
+Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5)};
 
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -44,6 +45,8 @@ void printDebug(Point, Point);
 int roundFloat(const float);
 void lineDDA();
 void lineBres();
+void lineBresN();
+void polyLine();
 
 /* OPENGL FUNCS */
 void init();
@@ -95,8 +98,8 @@ void main(int argc, char** argv)
 	////////////////////////////
 	
 		// Set start / end points for line draw algs
-	START = Point(5, 5);
-	END = Point(95, 95);
+	START = Point(5, 50);
+	END = Point(95, 50);
 
 
 	////////////////////////////
@@ -104,7 +107,7 @@ void main(int argc, char** argv)
 	////////////////////////////
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
 	/*initialize variables, allocate memory, create buffers, etc. */
 	//create window of size (win_width x win_height
 	glutInitWindowSize(winWidth, winHeight);
@@ -112,7 +115,7 @@ void main(int argc, char** argv)
 	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
-	glutDisplayFunc(lineBres); //rendering calls here
+	glutDisplayFunc(polyLine); //rendering calls here
 	glutReshapeFunc(reshape); //update GL on window size change
 	glutMouseFunc(mouse);     //mouse button events
 	glutMotionFunc(motion);   //mouse movement events
@@ -180,9 +183,9 @@ void lineDDA()
 
 
 	//clears the screen
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	//glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	//clears the opengl Modelview transformation matrix
-	glLoadIdentity();
+	//glLoadIdentity();
 	drawPix(curr);
 
 	for (int i = 0; i < steps; i++)
@@ -192,8 +195,76 @@ void lineDDA()
 		drawPix(curr);
 	}
 
-	glutSwapBuffers();
+	//glutSwapBuffers();
 	check();
+}
+
+void lineBresN()
+{
+	int err;
+	int incX, incY, inc1, inc2;
+	Point d = Point();
+	Point curr = Point();
+
+	d.x = END.x - START.x;
+	d.y = END.y - START.y;
+
+	if (d.x < 0)
+		d.x = -d.x;
+	if (d.y < 0)
+		d.y = -d.y;
+	incX = 1;
+	
+	if (END.x < START.x)
+		incX = -1;
+	incY = 1;
+	if (END.y < START.y)
+		incY = -1;
+
+	curr = START;
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	if (d.x > d.y) 
+	{
+		drawPix(curr);
+		err = 2 * d.y - d.x;
+		inc1 = 2 * (d.y - d.x);
+		inc2 = 2 * d.y;
+
+		for (int i = 0; i < d.x; i++)
+		{
+			if (err > 0) 
+			{
+				curr.y += incY;
+				err += inc1;
+			}
+			else
+				err += inc2;
+			curr.x += incX;
+			drawPix(curr);
+		}
+	}
+	else
+	{
+		drawPix(curr);
+		err = 2 * d.x - d.y;
+		inc1 = 2 * (d.x - d.y);
+		inc2 = 2 * d.x;
+		for (int i = 0; i < d.y; i++)
+		{
+			if (err >= 0)
+			{
+				curr.x += incX;
+				err += inc1;
+			}
+			else
+				err += inc2;
+			curr.y += incY;
+			drawPix(curr);
+		}
+	}
+	//glutSwapBuffers();
 }
 
 /* Bresenham Line Draw */
@@ -223,7 +294,7 @@ void lineBres()
 	}
 
 	//clears the screen
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
 	drawPix(curr);
@@ -238,6 +309,26 @@ void lineBres()
 			p += twoDyMinusDx;
 		}
 		drawPix(curr);
+	}
+	//glutSwapBuffers();
+	//check();
+}
+
+void polyLine()
+{
+	int n = sizeof(pointArr) / sizeof(pointArr[0]);
+	for (int i = 0; i < n; i++)
+	{
+		if (i != n - 1)
+		{
+			START = pointArr[i];
+			END = pointArr[i + 1];
+		}
+		else {
+			START = pointArr[i];
+			END = pointArr[0];
+		}
+		lineBresN();
 	}
 	glutSwapBuffers();
 	check();
