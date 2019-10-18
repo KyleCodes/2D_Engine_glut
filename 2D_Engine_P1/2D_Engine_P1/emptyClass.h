@@ -7,11 +7,7 @@ using namespace std;
 
 class Blank
 {
-	// Data
 
-	// Constructor
-
-	// Destructor
 };
 
 

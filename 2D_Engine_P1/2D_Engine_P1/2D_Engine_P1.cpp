@@ -6,6 +6,18 @@
 	- design classes for cfg, picture processing
 */
 
+////////////////////////////
+// COLLECT CFG INFO 
+////////////////////////////
+
+// collect line draw info
+// select shapes to load from file
+// select clipping info
+// select transformations for each shape
+// package these options into a cfg object
+// use fio to load polygon info into cfg object
+// pass cfg object into drawing engine
+
 #include <Windows.h>
 #include <GL/glut.h> 
 #include <stdio.h>
@@ -14,6 +26,8 @@
 #include <iostream>
 #include "Point.h"
 #include "Pointf.h"
+#include "EdgeTable.h"
+
 
 using namespace std;
 
@@ -30,26 +44,36 @@ int winHeight, winWidth;
 
 	// hold points for line drawing 
 Point START, END;
-Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5)};
+Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5) };
 
+
+EdgeTable eT;
+EdgeBucketHolder activeEdge;
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
 
-/* Menu Funcs */
-void printMenu();
-void printDebug(Point, Point);
+// Window
+void setupWindow();
+void init();
 
 
-	/* My Funcs */
-int roundFloat(const float);
+// EDGE
+void insertionSort(EdgeBucketHolder*);
+void storeEdgeInBucketHolder(EdgeBucketHolder*, EdgeBucket);
+void storeEdgeInTable(Point, Point);
+void removeEdgeByYmax(EdgeBucketHolder*, int);
+void updateXbySlopeInv(EdgeBucketHolder*);
+
+// LINE
+void setPointsForLine(Point &, Point &);
 void lineDDA();
 void lineBres();
 void lineBresN();
 void polyLine();
 
+
 /* OPENGL FUNCS */
-void init();
 void idle();
 void display();
 void drawPix(Point);
@@ -59,39 +83,19 @@ void mouse(int button, int state, int x, int y);
 void motion(int x, int y);
 void check();
 
+/* Menu Funcs */
+void printMenu();
+
 ////////////////////////////////////////////////////////////////////
 // START OF EXECUTION
 ////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
 {
 	////////////////////////////
-	// COLLECT CFG INFO 
-	////////////////////////////
-	
-	// collect line draw info
-	// select shapes to load from file
-	// select clipping info
-	// select transformations for each shape
-	// package these options into a cfg object
-	// use fio to load polygon info into cfg object
-	// pass cfg object into drawing engine
-
-
-
-	////////////////////////////
 	// WINDOW SETUP
 	////////////////////////////
 
-		// Assign number of grid elements
-	gridWidth = 100;
-	gridHeight = 100;
-
-		// Assign dimension of single pixel
-	pixelSize = 5.0;
-
-		// Derive and assign Resolution
-	winHeight = (int)(gridHeight * pixelSize);
-	winWidth = (int)(gridWidth * pixelSize);
+	setupWindow();
 
 	////////////////////////////
 	// VARS SETUP
@@ -101,6 +105,13 @@ void main(int argc, char** argv)
 	START = Point(5, 50);
 	END = Point(95, 50);
 
+	////////////////////////////
+	// EDGES SETUP
+	////////////////////////////
+	eT = EdgeTable(winHeight);
+	activeEdge = EdgeBucketHolder();
+
+
 
 	////////////////////////////
 	// GLUT SETUP
@@ -108,10 +119,7 @@ void main(int argc, char** argv)
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	/*initialize variables, allocate memory, create buffers, etc. */
-	//create window of size (win_width x win_height
 	glutInitWindowSize(winWidth, winHeight);
-	//windown title is "glut demo"
 	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
@@ -133,29 +141,128 @@ void main(int argc, char** argv)
 // FUNCTION DEFINITIONS
 ////////////////////////////////////////////////////////////////////
 
+
 ////////////////////////////
-// MENU FUNCS
+// SETUP
 ////////////////////////////
-void printMenu()
+
+void setupWindow()
 {
-	cout << "/////////////////////////////" << endl;
-	cout << "     Pick Draw Algorithm     " << endl;
-	cout << endl;
-	cout << "    1) Bresenham Line Draw   " << endl;
-	cout << "    2) DDA Line Draw         " << endl;
-	cout << "    3) ..                    " << endl;
-	cout << endl;
-	cout << "    4) Quit                  " << endl;
-	cout << endl;
-	cout << "\t";
+	gridWidth = 100;
+	gridHeight = 100;
+
+	// Assign dimension of single pixel
+	pixelSize = 5.0;
+
+	// Derive and assign Resolution
+	winHeight = (int)(gridHeight * pixelSize);
+	winWidth = (int)(gridWidth * pixelSize);
 }
 
-void printDebug(Point start, Point end)
+/* Set background color*/
+void init()
 {
-	//int size = sizeof(arr) / sizeof(arr[0]);
-	cout << "start point: x=" << start.x << " y=" << start.y << endl;
-	cout << "end point  : x=" << end.x << " y=" << end.y << endl;
-	cout << endl;
+	// Set default background color for resetting screen
+	glClearColor(1.0, 0.0, 0.0, 0.0);
+
+	// Check for errors
+	check();
+}
+
+////////////////////////////
+// Edge ALGORITHMS
+////////////////////////////
+void insertionSort(EdgeBucketHolder* eB)
+{
+	EdgeBucket temp = EdgeBucket();
+	int i, j;
+
+	for (i = 0; i < eB->numOfBuckets; i++)
+	{
+		temp = eB->buckets[i];
+		j = i - 1;
+
+		while ((temp.xOfyMin < eB->buckets[j].xOfyMin) && (j >= 0))
+		{
+			eB->buckets[j + 1] = eB->buckets[j];
+			j = j - 1;
+		}
+		eB->buckets[j + 1] = temp;
+	}
+}
+
+void storeEdgeInBucketHolder(EdgeBucketHolder* dest, EdgeBucket src)
+{
+	dest->buckets[dest->numOfBuckets] = src;
+	insertionSort(dest);
+	dest->numOfBuckets++;
+}
+
+void storeEdgeInTable(Point p1, Point p2)
+{
+	EdgeBucket tempBucket = EdgeBucket(); 
+	Point d = Point();
+	d.x = p2.x - p1.x;
+	d.y = p2.y - p1.y;
+	int currLine;
+	float m;
+
+
+	if (p2.x == p1.x)
+	{
+		tempBucket.slopeInv = 0.0000000;
+	}
+	else
+	{
+		m = (float)d.y / (float)d.x;
+
+
+		if (d.y == 0)
+			return;
+
+		tempBucket.slopeInv = (float)1.0 / m;
+	}
+
+	if (p1.y > p2.y)
+	{
+		currLine = p2.y;
+		tempBucket.yMax = p1.y;
+		tempBucket.xOfyMin = p2.x;
+	}
+	else
+	{
+		currLine = p1.y;
+		tempBucket.yMax = p2.y;
+		tempBucket.xOfyMin = p1.x;
+	}
+	storeEdgeInBucketHolder(&eT.table[currLine], tempBucket);
+}
+
+void removeEdgeByYmax(EdgeBucketHolder* currBucket, int yMax)
+{
+	for (int i = 0; i < currBucket->numOfBuckets; i++)
+	{
+		if (currBucket->buckets[i].yMax == yMax)
+		{
+			for (int j = i; j < currBucket->numOfBuckets - 1; j++)
+			{
+				currBucket->buckets[j] = currBucket->buckets[j + 1];
+			}
+			currBucket->numOfBuckets--;
+			i--;
+		}
+	}
+
+
+}
+
+void updateXbySlopeInv(EdgeBucketHolder* currBucketHolder)
+{
+	for (int i = 0; i < currBucketHolder->numOfBuckets; i++)
+	{
+		currBucketHolder->buckets[i].xOfyMin = 
+			currBucketHolder->buckets[i].xOfyMin + currBucketHolder->buckets[i].slopeInv;
+	}
 }
 
 ////////////////////////////
@@ -334,19 +441,16 @@ void polyLine()
 	check();
 }
 
+void setPointsForLine(Point *p1, Point *p2)
+{
+	START = *p1;
+	END = *p2;
+}
+
 ////////////////////////////
 // OPENGL ENGINE FUNCS
 ////////////////////////////
-	
-/* Set background color / projection mode */
-void init()
-{
-	// Set default background color for resetting screen
-	glClearColor(1.0, 0.0, 0.0, 0.0);
-	
-	// Check for errors
-	check();
-}
+
 
 /* Define what happens when no work to be done */
 void idle()
@@ -478,4 +582,21 @@ void check()
 		printf("GLERROR: There was an error %s\n", gluErrorString(err));
 		exit(1);
 	}
+}
+
+////////////////////////////
+// MENU FUNCS
+////////////////////////////
+void printMenu()
+{
+	cout << "/////////////////////////////" << endl;
+	cout << "     Pick Draw Algorithm     " << endl;
+	cout << endl;
+	cout << "    1) Bresenham Line Draw   " << endl;
+	cout << "    2) DDA Line Draw         " << endl;
+	cout << "    3) ..                    " << endl;
+	cout << endl;
+	cout << "    4) Quit                  " << endl;
+	cout << endl;
+	cout << "\t";
 }
