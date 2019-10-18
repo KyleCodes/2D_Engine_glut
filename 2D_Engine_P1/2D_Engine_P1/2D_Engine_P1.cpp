@@ -48,7 +48,7 @@ Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Poin
 
 
 EdgeTable edgeTable;
-ScanlineEdges activeEdge;
+ScanlineEdges activeScanline;
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
@@ -65,6 +65,7 @@ void storeEdgeInScanlineArr(ScanlineEdges*, EdgeInfo);
 void storeEdgeInTable(Point, Point);
 void removeEdgeByYmax(ScanlineEdges*, int);
 void updateXbySlopeInv(ScanlineEdges*);
+void scanlineFill();
 
 // LINE
 void setPointsForLine(Point &, Point &);
@@ -111,7 +112,7 @@ void main(int argc, char** argv)
 	// EDGES SETUP
 	////////////////////////////
 	edgeTable = EdgeTable(winHeight);
-	activeEdge = ScanlineEdges();
+	activeScanline = ScanlineEdges();
 
 
 	////////////////////////////
@@ -261,12 +262,88 @@ void removeEdgeByYmax(ScanlineEdges* currScanline, int yMax)
 	}
 }
 
+/* Move x bound of fill line according to the slope of the line */
 void updateXbySlopeInv(ScanlineEdges* currScanline)
 {
 	for (int i = 0; i < currScanline->EdgeNum; i++)
 	{
 		currScanline->edges[i].xIntercept = 
 			currScanline->edges[i].xIntercept + currScanline->edges[i].invSlope;
+	}
+}
+
+void scanlineFill()
+{
+	// 1. Do not draw fill lines on horizontal edge lines
+	// 2. If scanline passes thru vertex and the edges are located on just one side of the line,
+	//				then treat that vertex as 2 line crossings (AKA local max/min)
+	// 3. If scanline passes thru vertex and the edges cross it, treat as one line crossing.
+
+	// Draw from bottom of the screen to the top
+
+	int coordCount = 0;
+	int xL;
+	int xR;
+	bool fillFlag;
+	int yMax1 = 0;
+	int yMax2 = 0;
+
+
+	for (int i = 0; i < winHeight; i++)
+	{
+		// Move edge from edge table into the Active edge table
+		for (int j = 0; j < edgeTable.table[i].EdgeNum; j++)
+		{
+			storeEdgeInScanlineArr(&activeScanline, *edgeTable.table[i].edges);
+		}
+
+		// Remove edges who's y = ymax. This is a redundant draw.
+		removeEdgeByYmax(&activeScanline, i);
+		
+		// Sort active edge table 
+		insertionSort(&activeScanline);
+		
+
+		// Generate fill line bounds for given scanline based on AET
+
+		int j = 0;
+		coordCount = 0;
+		xL = 0;
+		xR = 0;
+		yMax1 = 0;
+		yMax2 = 0;
+
+		// Implement-odd even rule by keeping track of remainer of numOfCoordinate bounds
+		while (j < activeScanline.EdgeNum)
+		{
+			// left bound of a fill line
+			if (coordCount % 2 == 0)
+			{
+				xL = (int)activeScanline.edges[j].xIntercept;
+				yMax1 = activeScanline.edges[j].yMax;
+				if (xL == xR)
+				{
+					if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+					{
+						xR = xL;
+						yMax2 = yMax1;
+					}
+					else
+					{
+						coordCount++;
+					}
+				}
+				else
+				{
+					coordCount++;
+				}
+			}
+			// right bound of a fill line
+			else
+			{
+
+			}
+		}
 	}
 }
 
