@@ -47,7 +47,7 @@ Point START, END;
 Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5) };
 
 
-EdgeTable eT;
+EdgeTable edgeTable;
 ScanlineEdges activeEdge;
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -61,7 +61,7 @@ void init();
 // EDGE
 void initEdgeTable();
 void insertionSort(ScanlineEdges*);
-void storeEdgeInBucketHolder(ScanlineEdges*, EdgeInfo);
+void storeEdgeInScanlineArr(ScanlineEdges*, EdgeInfo);
 void storeEdgeInTable(Point, Point);
 void removeEdgeByYmax(ScanlineEdges*, int);
 void updateXbySlopeInv(ScanlineEdges*);
@@ -110,7 +110,7 @@ void main(int argc, char** argv)
 	////////////////////////////
 	// EDGES SETUP
 	////////////////////////////
-	eT = EdgeTable(winHeight);
+	edgeTable = EdgeTable(winHeight);
 	activeEdge = ScanlineEdges();
 
 
@@ -180,27 +180,29 @@ void insertionSort(ScanlineEdges* currLineEdges)
 	EdgeInfo temp = EdgeInfo();
 	int j;
 
-	for (int i = 0; i < currLineEdges->BucketCount; i++)
+	for (int i = 0; i < currLineEdges->EdgeNum; i++)
 	{
-		temp = currLineEdges->buckets[i];
+		temp = currLineEdges->edges[i];
 		j = i - 1;
 
-		while ((temp.xIntercept < currLineEdges->buckets[j].xIntercept) && (j >= 0))
+		while ((temp.xIntercept < currLineEdges->edges[j].xIntercept) && (j >= 0))
 		{
-			currLineEdges->buckets[j + 1] = currLineEdges->buckets[j];
+			currLineEdges->edges[j + 1] = currLineEdges->edges[j];
 			j = j - 1;
 		}
-		currLineEdges->buckets[j + 1] = temp;
+		currLineEdges->edges[j + 1] = temp;
 	}
 }
 
-void storeEdgeInBucketHolder(ScanlineEdges* dest, EdgeInfo src)
+/* Stores information about an edge inside of an array of edges for a given scanline */
+void storeEdgeInScanlineArr(ScanlineEdges* targetScanline, EdgeInfo src)
 {
-	dest->buckets[dest->BucketCount] = src;
-	insertionSort(dest);
-	dest->BucketCount++;
+	targetScanline->edges[targetScanline->EdgeNum] = src;
+	insertionSort(targetScanline);
+	targetScanline->EdgeNum++;
 }
 
+/* Configures an EdgeInfo object to be stored in the table based on geometric props */
 void storeEdgeInTable(Point p1, Point p2)
 {
 	EdgeInfo tempBucket = EdgeInfo(); 
@@ -208,24 +210,25 @@ void storeEdgeInTable(Point p1, Point p2)
 	d.x = p2.x - p1.x;
 	d.y = p2.y - p1.y;
 	int currLine;
-	float m;
+	float slope;
 
-
+	// If both points are on a colinear vertical line
 	if (p2.x == p1.x)
 	{
 		tempBucket.invSlope = 0.0000000;
 	}
+	// Get the x increment amount, invSlope
 	else
 	{
-		m = (float)d.y / (float)d.x;
+		slope = (float)d.y / (float)d.x;
 
 
 		if (d.y == 0)
 			return;
 
-		tempBucket.invSlope = (float)1.0 / m;
+		tempBucket.invSlope = (float)1.0 / slope;
 	}
-
+	//case for different symmetries
 	if (p1.y > p2.y)
 	{
 		currLine = p2.y;
@@ -238,33 +241,32 @@ void storeEdgeInTable(Point p1, Point p2)
 		tempBucket.yMax = p2.y;
 		tempBucket.xIntercept = p1.x;
 	}
-	storeEdgeInBucketHolder(&eT.table[currLine], tempBucket);
+	storeEdgeInScanlineArr(&edgeTable.table[currLine], tempBucket);
 }
 
-void removeEdgeByYmax(ScanlineEdges* currBucket, int yMax)
+/* Removes an edge from the scanline in the table once that scanline has been drawn */
+void removeEdgeByYmax(ScanlineEdges* currScanline, int yMax)
 {
-	for (int i = 0; i < currBucket->BucketCount; i++)
+	for (int i = 0; i < currScanline->EdgeNum; i++)
 	{
-		if (currBucket->buckets[i].yMax == yMax)
+		if (currScanline->edges[i].yMax == yMax)
 		{
-			for (int j = i; j < currBucket->BucketCount - 1; j++)
+			for (int j = i; j < currScanline->EdgeNum - 1; j++)
 			{
-				currBucket->buckets[j] = currBucket->buckets[j + 1];
+				currScanline->edges[j] = currScanline->edges[j + 1];
 			}
-			currBucket->BucketCount--;
+			currScanline->EdgeNum--;
 			i--;
 		}
 	}
-
-
 }
 
-void updateXbySlopeInv(ScanlineEdges* currBucketHolder)
+void updateXbySlopeInv(ScanlineEdges* currScanline)
 {
-	for (int i = 0; i < currBucketHolder->BucketCount; i++)
+	for (int i = 0; i < currScanline->EdgeNum; i++)
 	{
-		currBucketHolder->buckets[i].xIntercept = 
-			currBucketHolder->buckets[i].xIntercept + currBucketHolder->buckets[i].invSlope;
+		currScanline->edges[i].xIntercept = 
+			currScanline->edges[i].xIntercept + currScanline->edges[i].invSlope;
 	}
 }
 

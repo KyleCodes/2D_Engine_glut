@@ -9,22 +9,23 @@ using namespace std;
 class ScanlineEdges
 {
 public:
-	int BucketCount;
-	EdgeInfo *buckets;
+	int EdgeNum;
+	int numOfEdges;
+	EdgeInfo *edges;
 
 	ScanlineEdges() 
 	{
-		this->BucketCount = 0;
-		buckets = NULL;
+		this->EdgeNum = 0;
+		edges = NULL;
 	}
 
 	ScanlineEdges(int numOfBuckets)
 	{
-		this->BucketCount = numOfBuckets;
-		buckets = new EdgeInfo[this->BucketCount];
-		for (int i = 0; i < this->BucketCount; i++)
+		this->EdgeNum = numOfBuckets;
+		edges = new EdgeInfo[this->EdgeNum];
+		for (int i = 0; i < this->EdgeNum; i++)
 		{
-			buckets[i] = EdgeInfo();
+			edges[i] = EdgeInfo();
 		}
 	}
 
