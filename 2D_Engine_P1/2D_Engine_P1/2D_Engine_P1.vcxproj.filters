@@ -38,13 +38,13 @@
     <ClInclude Include="Config.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="EdgeBucketHolder.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="EdgeBucket.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="EdgeTable.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EdgeInfo.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScanlineEdges.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

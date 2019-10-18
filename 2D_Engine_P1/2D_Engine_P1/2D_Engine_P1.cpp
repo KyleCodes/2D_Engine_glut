@@ -48,7 +48,7 @@ Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Poin
 
 
 EdgeTable eT;
-EdgeBucketHolder activeEdge;
+ScanlineEdges activeEdge;
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
@@ -59,11 +59,12 @@ void init();
 
 
 // EDGE
-void insertionSort(EdgeBucketHolder*);
-void storeEdgeInBucketHolder(EdgeBucketHolder*, EdgeBucket);
+void initEdgeTable();
+void insertionSort(ScanlineEdges*);
+void storeEdgeInBucketHolder(ScanlineEdges*, EdgeInfo);
 void storeEdgeInTable(Point, Point);
-void removeEdgeByYmax(EdgeBucketHolder*, int);
-void updateXbySlopeInv(EdgeBucketHolder*);
+void removeEdgeByYmax(ScanlineEdges*, int);
+void updateXbySlopeInv(ScanlineEdges*);
 
 // LINE
 void setPointsForLine(Point &, Point &);
@@ -105,12 +106,12 @@ void main(int argc, char** argv)
 	START = Point(5, 50);
 	END = Point(95, 50);
 
+
 	////////////////////////////
 	// EDGES SETUP
 	////////////////////////////
 	eT = EdgeTable(winHeight);
-	activeEdge = EdgeBucketHolder();
-
+	activeEdge = ScanlineEdges();
 
 
 	////////////////////////////
@@ -172,35 +173,37 @@ void init()
 ////////////////////////////
 // Edge ALGORITHMS
 ////////////////////////////
-void insertionSort(EdgeBucketHolder* eB)
-{
-	EdgeBucket temp = EdgeBucket();
-	int i, j;
 
-	for (i = 0; i < eB->numOfBuckets; i++)
+/* Sorts edges on current scanline by smallest y value of each edge*/
+void insertionSort(ScanlineEdges* currLineEdges)
+{
+	EdgeInfo temp = EdgeInfo();
+	int j;
+
+	for (int i = 0; i < currLineEdges->BucketCount; i++)
 	{
-		temp = eB->buckets[i];
+		temp = currLineEdges->buckets[i];
 		j = i - 1;
 
-		while ((temp.xOfyMin < eB->buckets[j].xOfyMin) && (j >= 0))
+		while ((temp.xIntercept < currLineEdges->buckets[j].xIntercept) && (j >= 0))
 		{
-			eB->buckets[j + 1] = eB->buckets[j];
+			currLineEdges->buckets[j + 1] = currLineEdges->buckets[j];
 			j = j - 1;
 		}
-		eB->buckets[j + 1] = temp;
+		currLineEdges->buckets[j + 1] = temp;
 	}
 }
 
-void storeEdgeInBucketHolder(EdgeBucketHolder* dest, EdgeBucket src)
+void storeEdgeInBucketHolder(ScanlineEdges* dest, EdgeInfo src)
 {
-	dest->buckets[dest->numOfBuckets] = src;
+	dest->buckets[dest->BucketCount] = src;
 	insertionSort(dest);
-	dest->numOfBuckets++;
+	dest->BucketCount++;
 }
 
 void storeEdgeInTable(Point p1, Point p2)
 {
-	EdgeBucket tempBucket = EdgeBucket(); 
+	EdgeInfo tempBucket = EdgeInfo(); 
 	Point d = Point();
 	d.x = p2.x - p1.x;
 	d.y = p2.y - p1.y;
@@ -210,7 +213,7 @@ void storeEdgeInTable(Point p1, Point p2)
 
 	if (p2.x == p1.x)
 	{
-		tempBucket.slopeInv = 0.0000000;
+		tempBucket.invSlope = 0.0000000;
 	}
 	else
 	{
@@ -220,35 +223,35 @@ void storeEdgeInTable(Point p1, Point p2)
 		if (d.y == 0)
 			return;
 
-		tempBucket.slopeInv = (float)1.0 / m;
+		tempBucket.invSlope = (float)1.0 / m;
 	}
 
 	if (p1.y > p2.y)
 	{
 		currLine = p2.y;
 		tempBucket.yMax = p1.y;
-		tempBucket.xOfyMin = p2.x;
+		tempBucket.xIntercept = p2.x;
 	}
 	else
 	{
 		currLine = p1.y;
 		tempBucket.yMax = p2.y;
-		tempBucket.xOfyMin = p1.x;
+		tempBucket.xIntercept = p1.x;
 	}
 	storeEdgeInBucketHolder(&eT.table[currLine], tempBucket);
 }
 
-void removeEdgeByYmax(EdgeBucketHolder* currBucket, int yMax)
+void removeEdgeByYmax(ScanlineEdges* currBucket, int yMax)
 {
-	for (int i = 0; i < currBucket->numOfBuckets; i++)
+	for (int i = 0; i < currBucket->BucketCount; i++)
 	{
 		if (currBucket->buckets[i].yMax == yMax)
 		{
-			for (int j = i; j < currBucket->numOfBuckets - 1; j++)
+			for (int j = i; j < currBucket->BucketCount - 1; j++)
 			{
 				currBucket->buckets[j] = currBucket->buckets[j + 1];
 			}
-			currBucket->numOfBuckets--;
+			currBucket->BucketCount--;
 			i--;
 		}
 	}
@@ -256,12 +259,12 @@ void removeEdgeByYmax(EdgeBucketHolder* currBucket, int yMax)
 
 }
 
-void updateXbySlopeInv(EdgeBucketHolder* currBucketHolder)
+void updateXbySlopeInv(ScanlineEdges* currBucketHolder)
 {
-	for (int i = 0; i < currBucketHolder->numOfBuckets; i++)
+	for (int i = 0; i < currBucketHolder->BucketCount; i++)
 	{
-		currBucketHolder->buckets[i].xOfyMin = 
-			currBucketHolder->buckets[i].xOfyMin + currBucketHolder->buckets[i].slopeInv;
+		currBucketHolder->buckets[i].xIntercept = 
+			currBucketHolder->buckets[i].xIntercept + currBucketHolder->buckets[i].invSlope;
 	}
 }
 

@@ -158,8 +158,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
-    <ClInclude Include="EdgeBucketHolder.h" />
-    <ClInclude Include="EdgeBucket.h" />
+    <ClInclude Include="ScanlineEdges.h" />
+    <ClInclude Include="EdgeInfo.h" />
     <ClInclude Include="EdgeTable.h" />
     <ClInclude Include="emptyClass.h" />
     <ClInclude Include="FIO.h" />
