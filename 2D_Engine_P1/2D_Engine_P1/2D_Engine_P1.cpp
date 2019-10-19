@@ -46,7 +46,7 @@ int winHeight, winWidth;
 Point START, END;
 Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5) };
 
-
+bool fill = 1;
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
 ////////////////////////////////////////////////////////////////////
@@ -341,9 +341,31 @@ void scanlineFill()
 			// right bound of a fill line
 			else
 			{
+				xR = (int)activeScanline.edges[j].xIntercept;
+				yMax2 = activeScanline.edges[j].yMax;
+				fillFlag = 0;
 
+				if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+				{
+					xL = xR;
+					yMax1 = yMax2;
+				}
+				else
+				{
+					coordCount++;
+					fillFlag = 1;
+				}
+
+				if (fillFlag)
+				{
+					START = Point(xL, i);
+					END = Point(xR, i);
+					lineBresN();
+				}
 			}
+			j++;
 		}
+		updateXbySlopeInv(&activeScanline);
 	}
 }
 

@@ -12,7 +12,11 @@ public:
 	int maxHeight;
 	ScanlineEdges* table;
 
-	EdgeTable() {}
+	EdgeTable() 
+	{
+		maxHeight = 0;
+		table = NULL;
+	}
 
 	EdgeTable(int maxHeight) {
 		this->maxHeight = maxHeight;
