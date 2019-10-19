@@ -10,24 +10,17 @@ class ScanlineEdges
 {
 public:
 	int EdgeNum;
-	int numOfEdges;
+	int maxNumOfEdges = 10000;
 	EdgeInfo *edges;
 
 	ScanlineEdges() 
 	{
 		this->EdgeNum = 0;
-		edges = NULL;
+		edges = new EdgeInfo[this->maxNumOfEdges];
+		for (int i = 0; i < this->maxNumOfEdges; i++)
+			edges[i] = EdgeInfo();
 	}
 
-	ScanlineEdges(int numOfBuckets)
-	{
-		this->EdgeNum = numOfBuckets;
-		edges = new EdgeInfo[this->EdgeNum];
-		for (int i = 0; i < this->EdgeNum; i++)
-		{
-			edges[i] = EdgeInfo();
-		}
-	}
 
 	~ScanlineEdges() {}
 };

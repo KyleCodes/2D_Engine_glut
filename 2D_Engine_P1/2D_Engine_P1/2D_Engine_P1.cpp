@@ -46,7 +46,8 @@ int winHeight, winWidth;
 Point START, END;
 Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5) };
 
-bool fill = 1;
+
+bool fillTest = TRUE;
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
 ////////////////////////////////////////////////////////////////////
@@ -104,8 +105,8 @@ void main(int argc, char** argv)
 	////////////////////////////
 	
 		// Set start / end points for line draw algs
-	START = Point(5, 50);
-	END = Point(95, 50);
+	//START = Point(5, 50);
+	//END = Point(95, 50);
 
 
 	////////////////////////////
@@ -541,6 +542,7 @@ void polyLine()
 		}
 		lineBresN();
 	}
+
 	glutSwapBuffers();
 	check();
 }
@@ -597,7 +599,7 @@ void drawPix(Point p)
 	
 	// Specify vertex location
 	glVertex3f(p.x + .5, p.y + .5, 0);
-	glEnd;
+	glEnd();
 }
 
 /* Is called when display size changes, including initial creation of the display */
