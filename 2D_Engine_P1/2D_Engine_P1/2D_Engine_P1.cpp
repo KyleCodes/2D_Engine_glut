@@ -1,726 +1,406 @@
-/*
-	TODO
-	- add all cases for slope in lineBres
-	- add user interactivity
-	- read about other draw algs
-	- design classes for cfg, picture processing
-*/
+// CPP program to illustrate 
+// Scanline Polygon fill Algorithm 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
 
-////////////////////////////
-// COLLECT CFG INFO 
-////////////////////////////
-
-// collect line draw info
-// select shapes to load from file
-// select clipping info
-// select transformations for each shape
-// package these options into a cfg object
-// use fio to load polygon info into cfg object
-// pass cfg object into drawing engine
-
-#include <Windows.h>
+#include <stdio.h> 
+#include <math.h> 
 #include <GL/glut.h> 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <iostream>
-#include "Point.h"
-#include "Pointf.h"
-#include "EdgeTable.h"
+#define maxHt 800 
+#define maxWd 600 
+#define maxVer 10000 
 
+FILE* fp;
 
-using namespace std;
-
-////////////////////////////////////////////////////////////////////
-// GLOBAL VARIABLES -- all drawable objects will be stored here
-////////////////////////////////////////////////////////////////////
-
-	// Hold num of pixels in the grid,size of pixel
-int gridWidth, gridHeight;
-float pixelSize;
-
-	// Store window info
-int winHeight, winWidth;
-
-	// hold points for line drawing 
-Point START, END;
-Point pointArr[4] = { Point(5,10), Point(5,95), Point(95,95), Point(95,5) };
-
-
-EdgeTable edgeTable;
-ScanlineEdges activeScanline;
-////////////////////////////////////////////////////////////////////
-// FUNCTION PROTOTYPES
-////////////////////////////////////////////////////////////////////
-
-// Window
-void setupWindow();
-void init();
-
-
-// EDGE
-void initEdgeTable();
-void insertionSort(ScanlineEdges*);
-void storeEdgeInScanlineArr(ScanlineEdges*, EdgeInfo);
-void storeEdgeInTable(Point, Point);
-void removeEdgeByYmax(ScanlineEdges*, int);
-void updateXbySlopeInv(ScanlineEdges*);
-void scanlineFill();
-
-// LINE
-void setPointsForLine(Point &, Point &);
-void lineDDA();
-void lineBres();
-void lineBresN();
-void polyLine();
-
-
-/* OPENGL FUNCS */
-void draw();
-void idle();
-void display();
-void drawPix(Point);
-void reshape(int width, int height);
-void key(unsigned char ch, int x, int y);
-void mouse(int button, int state, int x, int y);
-void motion(int x, int y);
-void check();
-
-/* Menu Funcs */
-void printMenu();
-
-////////////////////////////////////////////////////////////////////
-// START OF EXECUTION
-////////////////////////////////////////////////////////////////////
-void main(int argc, char** argv)
+// Start from lower left corner 
+typedef struct edgebucket
 {
-	////////////////////////////
-	// WINDOW SETUP
-	////////////////////////////
+	int ymax; //max y-coordinate of edge 
+	float xofymin; //x-coordinate of lowest edge point updated only in aet 
+	float slopeinverse;
+}EdgeBucket;
 
-	setupWindow();
+typedef struct edgetabletup
+{
+	// the array will give the scanline number 
+	// The edge table (ET) with edges entries sorted 
+	// in increasing y and x of the lower end 
 
-	////////////////////////////
-	// VARS SETUP
-	////////////////////////////
-	
-		// Set start / end points for line draw algs
-	//START = Point(5, 50);
-	//END = Point(95, 50);
+	int countEdgeBucket; //no. of edgebuckets 
+	EdgeBucket buckets[maxVer];
+}EdgeTableTuple;
 
-
-	////////////////////////////
-	// EDGES SETUP
-	////////////////////////////
-	edgeTable = EdgeTable(winHeight);
-	activeScanline = ScanlineEdges();
+EdgeTableTuple EdgeTable[maxHt], ActiveEdgeTuple;
 
 
-	////////////////////////////
-	// GLUT SETUP
-	////////////////////////////
+// Scanline Function 
+void initEdgeTable()
+{
+	int i;
+	for (i = 0; i < maxHt; i++)
+	{
+		EdgeTable[i].countEdgeBucket = 0;
+	}
 
-	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
-	glutInitWindowSize(winWidth, winHeight);
-	glutCreateWindow("2D Graphics Engine");
-
-	/*defined glut callback functions*/
-	glutDisplayFunc(draw); //rendering calls here
-	glutReshapeFunc(reshape); //update GL on window size change
-	glutMouseFunc(mouse);     //mouse button events
-	glutMotionFunc(motion);   //mouse movement events
-	glutKeyboardFunc(key);    //Keyboard events
-	glutIdleFunc(idle);       //Function called while program is sitting "idle"
-
-	//initialize opengl variables
-	init();
-	//start glut event loop
-	glutMainLoop();
+	ActiveEdgeTuple.countEdgeBucket = 0;
 }
 
 
-////////////////////////////////////////////////////////////////////
-// FUNCTION DEFINITIONS
-////////////////////////////////////////////////////////////////////
-
-
-////////////////////////////
-// SETUP
-////////////////////////////
-
-void draw()
+void printTuple(EdgeTableTuple* tup)
 {
-	polyLine();
-	scanlineFill();
-	glutSwapBuffers();
-}
-
-
-void setupWindow()
-{
-	gridWidth = 100;
-	gridHeight = 100;
-
-	// Assign dimension of single pixel
-	pixelSize = 5.0;
-
-	// Derive and assign Resolution
-	winHeight = (int)(gridHeight * pixelSize);
-	winWidth = (int)(gridWidth * pixelSize);
-}
-
-/* Set background color*/
-void init()
-{
-	// Set default background color for resetting screen
-	glClearColor(1.0, 0.0, 0.0, 0.0);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, winHeight, 0, winWidth);
-	// Check for errors
-	check();
-}
-
-////////////////////////////
-// Edge ALGORITHMS
-////////////////////////////
-
-/* Sorts edges on current scanline by smallest y value of each edge*/
-void insertionSort(ScanlineEdges* currLineEdges)
-{
-	EdgeInfo temp = EdgeInfo();
 	int j;
 
-	for (int i = 1; i < currLineEdges->EdgeNum; i++)
+	if (tup->countEdgeBucket)
+		printf("\nCount %d-----\n", tup->countEdgeBucket);
+
+	for (j = 0; j < tup->countEdgeBucket; j++)
 	{
-		temp = currLineEdges->edges[i];
+		printf(" %d+%.2f+%.2f",
+			tup->buckets[j].ymax, tup->buckets[j].xofymin, tup->buckets[j].slopeinverse);
+	}
+}
+
+void printTable()
+{
+	int i, j;
+
+	for (i = 0; i < maxHt; i++)
+	{
+		if (EdgeTable[i].countEdgeBucket)
+			printf("\nScanline %d", i);
+
+		printTuple(&EdgeTable[i]);
+	}
+}
+
+
+/* Function to sort an array using insertion sort*/
+void insertionSort(EdgeTableTuple* ett)
+{
+	int i, j;
+	EdgeBucket temp;
+
+	for (i = 1; i < ett->countEdgeBucket; i++)
+	{
+		temp.ymax = ett->buckets[i].ymax;
+		temp.xofymin = ett->buckets[i].xofymin;
+		temp.slopeinverse = ett->buckets[i].slopeinverse;
 		j = i - 1;
 
-		while ((temp.xIntercept < currLineEdges->edges[j].xIntercept) && (j >= 0))
+		while ((temp.xofymin < ett->buckets[j].xofymin) && (j >= 0))
 		{
-			currLineEdges->edges[j + 1] = currLineEdges->edges[j];
+			ett->buckets[j + 1].ymax = ett->buckets[j].ymax;
+			ett->buckets[j + 1].xofymin = ett->buckets[j].xofymin;
+			ett->buckets[j + 1].slopeinverse = ett->buckets[j].slopeinverse;
 			j = j - 1;
 		}
-		currLineEdges->edges[j + 1] = temp;
+		ett->buckets[j + 1].ymax = temp.ymax;
+		ett->buckets[j + 1].xofymin = temp.xofymin;
+		ett->buckets[j + 1].slopeinverse = temp.slopeinverse;
 	}
 }
 
-/* Stores information about an edge inside of an array of edges for a given scanline */
-void storeEdgeInScanlineArr(ScanlineEdges* targetScanline, EdgeInfo src)
+
+void storeEdgeInTuple(EdgeTableTuple* receiver, int ym, int xm, float slopInv)
 {
-	targetScanline->edges[targetScanline->EdgeNum] = src;
-	insertionSort(targetScanline);
-	targetScanline->EdgeNum++;
+	// both used for edgetable and active edge table.. 
+	// The edge tuple sorted in increasing ymax and x of the lower end. 
+	(receiver->buckets[(receiver)->countEdgeBucket]).ymax = ym;
+	(receiver->buckets[(receiver)->countEdgeBucket]).xofymin = (float)xm;
+	(receiver->buckets[(receiver)->countEdgeBucket]).slopeinverse = slopInv;
+
+	// sort the buckets 
+	insertionSort(receiver);
+
+	(receiver->countEdgeBucket)++;
+
+
 }
 
-/* Configures an EdgeInfo object to be stored in the table based on geometric props */
-void storeEdgeInTable(Point p1, Point p2)
+void storeEdgeInTable(int x1, int y1, int x2, int y2)
 {
-	EdgeInfo tempBucket = EdgeInfo(); 
-	Point d = Point();
-	d.x = p2.x - p1.x;
-	d.y = p2.y - p1.y;
-	int currLine;
-	float slope;
+	float m, minv;
+	int ymaxTS, xwithyminTS, scanline; //ts stands for to store 
 
-	// If both points are on a colinear vertical line
-	if (p2.x == p1.x)
+	if (x2 == x1)
 	{
-		tempBucket.invSlope = 0.0000000;
+		minv = 0.000000;
 	}
-	// Get the x increment amount, invSlope
 	else
 	{
-		slope = (float)d.y / (float)d.x;
+		m = ((float)(y2 - y1)) / ((float)(x2 - x1));
 
-
-		if (p2.y == p1.y)
+		// horizontal lines are not stored in edge table 
+		if (y2 == y1)
 			return;
 
-		tempBucket.invSlope = (float)1.0 / slope;
+		minv = (float)1.0 / m;
+		printf("\nSlope string for %d %d & %d %d: %f", x1, y1, x2, y2, minv);
 	}
-	//case for different symmetries
-	if (p1.y > p2.y)
+
+	if (y1 > y2)
 	{
-		currLine = p2.y;
-		tempBucket.yMax = p1.y;
-		tempBucket.xIntercept = p2.x;
+		scanline = y2;
+		ymaxTS = y1;
+		xwithyminTS = x2;
 	}
 	else
 	{
-		currLine = p1.y;
-		tempBucket.yMax = p2.y;
-		tempBucket.xIntercept = p1.x;
+		scanline = y1;
+		ymaxTS = y2;
+		xwithyminTS = x1;
 	}
-	storeEdgeInScanlineArr(&edgeTable.table[currLine], tempBucket);
+	// the assignment part is done..now storage.. 
+	storeEdgeInTuple(&EdgeTable[scanline], ymaxTS, xwithyminTS, minv);
+
+
 }
 
-/* Removes an edge from the scanline in the table once that scanline has been drawn */
-void removeEdgeByYmax(ScanlineEdges* currScanline, int yMax)
+void removeEdgeByYmax(EdgeTableTuple* Tup, int yy)
 {
-	for (int i = 0; i < currScanline->EdgeNum; i++)
+	int i, j;
+	for (i = 0; i < Tup->countEdgeBucket; i++)
 	{
-		if (currScanline->edges[i].yMax == yMax)
+		if (Tup->buckets[i].ymax == yy)
 		{
-			for (int j = i; j < currScanline->EdgeNum - 1; j++)
+			printf("\nRemoved at %d", yy);
+
+			for (j = i; j < Tup->countEdgeBucket - 1; j++)
 			{
-				currScanline->edges[j] = currScanline->edges[j + 1];
+				Tup->buckets[j].ymax = Tup->buckets[j + 1].ymax;
+				Tup->buckets[j].xofymin = Tup->buckets[j + 1].xofymin;
+				Tup->buckets[j].slopeinverse = Tup->buckets[j + 1].slopeinverse;
 			}
-			currScanline->EdgeNum--;
+			Tup->countEdgeBucket--;
 			i--;
 		}
 	}
 }
 
-/* Move x bound of fill line according to the slope of the line */
-void updateXbySlopeInv(ScanlineEdges* currScanline)
+
+void updatexbyslopeinv(EdgeTableTuple* Tup)
 {
-	for (int i = 0; i < currScanline->EdgeNum; i++)
+	int i;
+
+	for (i = 0; i < Tup->countEdgeBucket; i++)
 	{
-		currScanline->edges[i].xIntercept = 
-			currScanline->edges[i].xIntercept + currScanline->edges[i].xIntercept;
+		(Tup->buckets[i]).xofymin = (Tup->buckets[i]).xofymin + (Tup->buckets[i]).slopeinverse;
 	}
 }
 
-void scanlineFill()
+
+void ScanlineFill()
 {
-	// 1. Do not draw fill lines on horizontal edge lines
-	// 2. If scanline passes thru vertex and the edges are located on just one side of the line,
-	//				then treat that vertex as 2 line crossings (AKA local max/min)
-	// 3. If scanline passes thru vertex and the edges cross it, treat as one line crossing.
-
-	// Draw from bottom of the screen to the top
-
-	int coordCount = 0;
-	int xL;
-	int xR;
-	bool fillFlag = 0;
-	int yMax1 = 0;
-	int yMax2 = 0;
-	int j;
+	/* Follow the following rules:
+	1. Horizontal edges: Do not include in edge table
+	2. Horizontal edges: Drawn either on the bottom or on the top.
+	3. Vertices: If local max or min, then count twice, else count
+		once.
+	4. Either vertices at local minima or at local maxima are drawn.*/
 
 
-	for (int i = 0; i < winHeight; i++)
+	int i, j, x1, ymax1, x2, ymax2, FillFlag = 0, coordCount;
+
+	// we will start from scanline 0; 
+	// Repeat until last scanline: 
+	for (i = 0; i < maxHt; i++)//4. Increment y by 1 (next scan line) 
 	{
-		// Move edge from edge table into the Active edge table
-		for (j = 0; j < edgeTable.table[i].EdgeNum; j++)
+
+		// 1. Move from ET bucket y to the 
+		// AET those edges whose ymin = y (entering edges) 
+		for (j = 0; j < EdgeTable[i].countEdgeBucket; j++)
 		{
-			storeEdgeInScanlineArr(&activeScanline, edgeTable.table[i].edges[j]);
+			storeEdgeInTuple(&ActiveEdgeTuple, EdgeTable[i].buckets[j].
+				ymax, EdgeTable[i].buckets[j].xofymin,
+				EdgeTable[i].buckets[j].slopeinverse);
 		}
+		printTuple(&ActiveEdgeTuple);
 
-		// Remove edges who's y = ymax. This is a redundant draw.
-		removeEdgeByYmax(&activeScanline, i);
-		
-		// Sort active edge table 
-		insertionSort(&activeScanline);
-		
+		// 2. Remove from AET those edges for 
+		// which y=ymax (not involved in next scan line) 
+		removeEdgeByYmax(&ActiveEdgeTuple, i);
 
-		// Generate fill line bounds for given scanline based on AET
+		//sort AET (remember: ET is presorted) 
+		insertionSort(&ActiveEdgeTuple);
 
+		printTuple(&ActiveEdgeTuple);
+
+		//3. Fill lines on scan line y by using pairs of x-coords from AET 
 		j = 0;
-		fillFlag = 0;
+		FillFlag = 0;
 		coordCount = 0;
-		xL = 0;
-		xR = 0;
-		yMax1 = 0;
-		yMax2 = 0;
-
-		// Implement-odd even rule by keeping track of remainer of numOfCoordinate bounds
-		while (j < activeScanline.EdgeNum)
+		x1 = 0;
+		x2 = 0;
+		ymax1 = 0;
+		ymax2 = 0;
+		while (j < ActiveEdgeTuple.countEdgeBucket)
 		{
-			// left bound of a fill line
 			if (coordCount % 2 == 0)
 			{
-				xL = (int)activeScanline.edges[j].xIntercept;
-				yMax1 = activeScanline.edges[j].yMax;
-				if (xL == xR)
+				x1 = (int)(ActiveEdgeTuple.buckets[j].xofymin);
+				ymax1 = ActiveEdgeTuple.buckets[j].ymax;
+				if (x1 == x2)
 				{
-					if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+					/* three cases can arrive-
+						1. lines are towards top of the intersection
+						2. lines are towards bottom
+						3. one line is towards top and other is towards bottom
+					*/
+					if (((x1 == ymax1) && (x2 != ymax2)) || ((x1 != ymax1) && (x2 == ymax2)))
 					{
-						xR = xL;
-						yMax2 = yMax1;
+						x2 = x1;
+						ymax2 = ymax1;
 					}
+
 					else
 					{
 						coordCount++;
 					}
 				}
+
 				else
 				{
 					coordCount++;
 				}
 			}
-			// right bound of a fill line
 			else
 			{
-				xR = (int)activeScanline.edges[j].xIntercept;
-				yMax2 = activeScanline.edges[j].yMax;
-				fillFlag = 0;
+				x2 = (int)ActiveEdgeTuple.buckets[j].xofymin;
+				ymax2 = ActiveEdgeTuple.buckets[j].ymax;
 
+				FillFlag = 0;
 
-
-				if (xL == xR)
+				// checking for intersection... 
+				if (x1 == x2)
 				{
-					if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+					/*three cases can arive-
+						1. lines are towards top of the intersection
+						2. lines are towards bottom
+						3. one line is towards top and other is towards bottom
+					*/
+					if (((x1 == ymax1) && (x2 != ymax2)) || ((x1 != ymax1) && (x2 == ymax2)))
 					{
-						xL = xR;
-						yMax1 = yMax2;
+						x1 = x2;
+						ymax1 = ymax2;
 					}
 					else
 					{
 						coordCount++;
-						fillFlag = 1;
+						FillFlag = 1;
 					}
 				}
 				else
 				{
 					coordCount++;
-					fillFlag = 1;
+					FillFlag = 1;
 				}
 
 
-				if (fillFlag)
+				if (FillFlag)
 				{
-					START = Point(xL, i);
-					END = Point(xR, i);
-					lineBresN();
+					//drawing actual lines... 
+					glColor3f(0.0f, 0.7f, 0.0f);
+
+					glBegin(GL_LINES);
+					glVertex2i(x1, i);
+					glVertex2i(x2, i);
+					glEnd();
 					glFlush();
+
+					// printf("\nLine drawn from %d,%d to %d,%d",x1,i,x2,i); 
 				}
+
 			}
+
 			j++;
 		}
-		updateXbySlopeInv(&activeScanline);
+
+
+		// 5. For each nonvertical edge remaining in AET, update x for new y 
+		updatexbyslopeinv(&ActiveEdgeTuple);
 	}
+
+
+	printf("\nScanline filling complete");
+
 }
 
-////////////////////////////
-// DRAWING ALGORITHMS
-////////////////////////////
 
-/* DDA Line Draw */
-void lineDDA()
+void myInit(void)
 {
-	Point curr = START;
-	Point d = Point();
 
-	d.x = END.x - START.x;
-	d.y = END.y - START.y;
+	glClearColor(1.0, 1.0, 1.0, 0.0);
+	glMatrixMode(GL_PROJECTION);
 
-	double steps;
-	float xInc, yInc;
-	if (fabs(d.x) > fabs(d.y))
-		steps = fabs(d.x);
-	else
-		steps = fabs(d.y);
-
-	xInc = d.x / (float)steps;
-	yInc = d.y / (float)steps;
-
-
-	//clears the screen
-	//glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	//clears the opengl Modelview transformation matrix
-	//glLoadIdentity();
-	drawPix(curr);
-
-	for (int i = 0; i < steps; i++)
-	{
-		curr.x += xInc;
-		curr.y += yInc;
-		drawPix(curr);
-	}
-
-	//glutSwapBuffers();
-	check();
-}
-
-void lineBresN()
-{
-	int err;
-	int incX, incY, inc1, inc2;
-	Point d = Point();
-	Point curr = Point();
-
-	d.x = END.x - START.x;
-	d.y = END.y - START.y;
-
-	if (d.x < 0)
-		d.x = -d.x;
-	if (d.y < 0)
-		d.y = -d.y;
-	incX = 1;
-	
-	if (END.x < START.x)
-		incX = -1;
-	incY = 1;
-	if (END.y < START.y)
-		incY = -1;
-
-	curr = START;
-
-	//glClear(GL_COLOR_BUFFER_BIT);
-
-	if (d.x > d.y) 
-	{
-		drawPix(curr);
-		err = 2 * d.y - d.x;
-		inc1 = 2 * (d.y - d.x);
-		inc2 = 2 * d.y;
-
-		for (int i = 0; i < d.x; i++)
-		{
-			if (err > 0) 
-			{
-				curr.y += incY;
-				err += inc1;
-			}
-			else
-				err += inc2;
-			curr.x += incX;
-			drawPix(curr);
-		}
-	}
-	else
-	{
-		drawPix(curr);
-		err = 2 * d.x - d.y;
-		inc1 = 2 * (d.x - d.y);
-		inc2 = 2 * d.x;
-		for (int i = 0; i < d.y; i++)
-		{
-			if (err >= 0)
-			{
-				curr.x += incX;
-				err += inc1;
-			}
-			else
-				err += inc2;
-			curr.y += incY;
-			drawPix(curr);
-		}
-	}
-	//glutSwapBuffers();
-}
-
-/* Bresenham Line Draw */
-void lineBres()
-{
-	Point curr = Point();
-	Point d = Point();
-
-	d.x = END.x - START.x;
-	d.y = END.y - START.y;
-
-	int p = 2 * d.y - d.x;
-	int twoDy = 2 * d.y;
-	int twoDyMinusDx = 2 * (d.y - d.x);
-
-
-	if (START.x > END.x)
-	{
-		curr.x = END.x;
-		curr.y = END.y;
-		END = START;
-	}
-	else
-	{
-		curr.x = START.x;
-		curr.y = START.y;
-	}
-
-	//clears the screen
-	glClear(GL_COLOR_BUFFER_BIT);
-	//clears the opengl Modelview transformation matrix
 	glLoadIdentity();
-	drawPix(curr);
-	while (curr.x < END.x)
+	gluOrtho2D(0, maxHt, 0, maxWd);
+	glClear(GL_COLOR_BUFFER_BIT);
+}
+
+void drawPolyDino()
+{
+
+	glColor3f(1.0f, 0.0f, 0.0f);
+	int count = 0, x1, y1, x2, y2;
+	rewind(fp);
+	while (!feof(fp))
 	{
-		curr.x++;
-		if (p < 0)
-			p += twoDy;
+		count++;
+		if (count > 2)
+		{
+			x1 = x2;
+			y1 = y2;
+			count = 2;
+		}
+		if (count == 1)
+		{
+			fscanf(fp, "%d,%d", &x1, &y1);
+		}
 		else
 		{
-			curr.y++;
-			p += twoDyMinusDx;
-		}
-		drawPix(curr);
-	}
-	//glutSwapBuffers();
-	//check();
-}
-
-void polyLine()
-{
-	int n = sizeof(pointArr) / sizeof(pointArr[0]);
-	for (int i = 0; i < n; i++)
-	{
-		if (i != n - 1)
-		{
-			START = pointArr[i];
-			END = pointArr[i + 1];
-		}
-		else {
-			START = pointArr[i];
-			END = pointArr[0];
-		}
-		lineBresN();
-		storeEdgeInTable(START, END);
-	}
-	glFlush();
-	check();
-}
-
-////////////////////////////
-// OPENGL ENGINE FUNCS
-////////////////////////////
+			fscanf(fp, "%d,%d", &x2, &y2);
+			printf("\n%d,%d", x2, y2);
+			glBegin(GL_LINES);
+			glVertex2i(x1, y1);
+			glVertex2i(x2, y2);
+			glEnd();
+			storeEdgeInTable(x1, y1, x2, y2);//storage of edges in edge table. 
 
 
-/* Define what happens when no work to be done */
-void idle()
-{
-	// draw screen over and over
-	glutPostRedisplay();
-}
-
-/* render the screen */
-void display()
-{
-	//clears the screen
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	//clears the opengl Modelview transformation matrix
-	glLoadIdentity();
-
-	//draws every other pixel on the screen
-	Point curr;
-	for (int j = 0; j < gridHeight; j += 2) {
-		for (int i = 0; i < gridWidth; i += 2) {
-			curr = Point(i, j);
-			drawPix(curr);
+			glFlush();
 		}
 	}
 
-	//blits the current opengl framebuffer on the screen
-	glutSwapBuffers();
-	//checks for opengl errors
-	check();
+
 }
 
-/* Draws single pixel given current grid size */
-void drawPix(Point p)
+void drawDino(void)
 {
-	// Set Mode for drawing
-	glBegin(GL_POINTS);
+	initEdgeTable();
+	drawPolyDino();
+	printf("\nTable");
+	printTable();
 
-	// Set RGB color of the point
-	glColor3f(1.0, 1.0, 1.0);
-	
-	// Specify vertex location
-	glVertex3f(p.x + .5, p.y + .5, 0);
-	glEnd();
+	ScanlineFill();//actual calling of scanline filling.. 
 }
 
-/* Is called when display size changes, including initial creation of the display */
-void reshape(int width, int height)
+void main(int argc, char** argv)
 {
-	/* Set up projection matrix to define view port */
-	// update global window width and height
-	winWidth = width;
-	winHeight = height;
-
-	// Create rendering area across the window
-	glViewport(0, 0, width, height);
-
-	// Designate orthogonal matrix to map pixel space to grid space
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(0, gridWidth, 0, gridHeight);
-
-	//clear the modelview matrix
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-
-	// set pixel size based on width
-	pixelSize = width / (float)gridWidth;
-
-	// set pixel size relative to the grid cell size
-	glPointSize(pixelSize);
-
-	// check for errors
-	check();
-}
-
-/* Gets current keyboard character being pressed */
-void key(unsigned char ch, int x, int y)
-{
-	switch (ch)
+	fp = fopen("PolyDino.txt", "r");
+	if (fp == NULL)
 	{
-	default:
-		//prints out which key the user hit
-		printf("User hit the \"%c\" key\n", ch);
-		break;
+		printf("Could not open file");
+		return;
 	}
-	//redraw the scene after keyboard input
-	glutPostRedisplay();
-}
+	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitWindowSize(maxHt, maxWd);
+	glutInitWindowPosition(100, 150);
+	glutCreateWindow("Scanline filled dinosaur");
+	myInit();
+	glutDisplayFunc(drawDino);
 
-/* Get the states of the mouse buttons and cursor */
-void mouse(int button, int state, int x, int y)
-{
-	//print the pixel location, and the grid location
-	printf("MOUSE AT PIXEL: %d %d, GRID: %d %d\n", x, y, (int)(x / pixelSize), (int)((winHeight - y) / pixelSize));
-	switch (button)
-	{
-	case GLUT_LEFT_BUTTON: //left button
-		printf("LEFT ");
-		break;
-	case GLUT_RIGHT_BUTTON: //right button
-		printf("RIGHT ");
-	default:
-		printf("UNKNOWN "); //any other mouse button
-		break;
-	}
-	if (state != GLUT_DOWN)  //button released
-		printf("BUTTON UP\n");
-	else
-		printf("BUTTON DOWN\n");  //button clicked
-
-	//redraw the scene after mouse click
-	glutPostRedisplay();
-}
-
-/* Get alerted when cursor moves acorss the screen */
-//gets called when the curser moves accross the scene
-void motion(int x, int y)
-{
-	//redraw the scene after mouse movement
-	glutPostRedisplay();
-}
-
-/* Check for errors in previous calls and display them */
-void check()
-{
-	GLenum err = glGetError();
-	if (err != GL_NO_ERROR)
-	{
-		printf("GLERROR: There was an error %s\n", gluErrorString(err));
-		exit(1);
-	}
-}
-
-////////////////////////////
-// MENU FUNCS
-////////////////////////////
-void printMenu()
-{
-	cout << "/////////////////////////////" << endl;
-	cout << "     Pick Draw Algorithm     " << endl;
-	cout << endl;
-	cout << "    1) Bresenham Line Draw   " << endl;
-	cout << "    2) DDA Line Draw         " << endl;
-	cout << "    3) ..                    " << endl;
-	cout << endl;
-	cout << "    4) Quit                  " << endl;
-	cout << endl;
-	cout << "\t";
+	glutMainLoop();
+	fclose(fp);
 }
