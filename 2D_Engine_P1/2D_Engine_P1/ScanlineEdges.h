@@ -10,7 +10,7 @@ class ScanlineEdges
 {
 public:
 	int EdgeNum;
-	int maxNumOfEdges = 10000;
+	int maxNumOfEdges = 100;
 	EdgeInfo *edges;
 
 	ScanlineEdges() 
