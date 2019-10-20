@@ -44,10 +44,9 @@ int winHeight, winWidth;
 
 	// hold points for line drawing 
 Point START, END;
-Point pointArr[5] = { Point(20,5), Point(5,50), Point(50,95), Point(95,50), Point(80,5) };
+Point pointArr[4] = { Point(5,10), Point(5,95), Point(95,95), Point(95,5) };
 
 
-bool fillTest = TRUE;
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
 ////////////////////////////////////////////////////////////////////
@@ -77,6 +76,7 @@ void polyLine();
 
 
 /* OPENGL FUNCS */
+void draw();
 void idle();
 void display();
 void drawPix(Point);
@@ -126,7 +126,7 @@ void main(int argc, char** argv)
 	glutCreateWindow("2D Graphics Engine");
 
 	/*defined glut callback functions*/
-	glutDisplayFunc(polyLine); //rendering calls here
+	glutDisplayFunc(draw); //rendering calls here
 	glutReshapeFunc(reshape); //update GL on window size change
 	glutMouseFunc(mouse);     //mouse button events
 	glutMotionFunc(motion);   //mouse movement events
@@ -149,6 +149,14 @@ void main(int argc, char** argv)
 // SETUP
 ////////////////////////////
 
+void draw()
+{
+	polyLine();
+	scanlineFill();
+	glutSwapBuffers();
+}
+
+
 void setupWindow()
 {
 	gridWidth = 100;
@@ -167,7 +175,9 @@ void init()
 {
 	// Set default background color for resetting screen
 	glClearColor(1.0, 0.0, 0.0, 0.0);
-
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0, winHeight, 0, winWidth);
 	// Check for errors
 	check();
 }
@@ -182,7 +192,7 @@ void insertionSort(ScanlineEdges* currLineEdges)
 	EdgeInfo temp = EdgeInfo();
 	int j;
 
-	for (int i = 0; i < currLineEdges->EdgeNum; i++)
+	for (int i = 1; i < currLineEdges->EdgeNum; i++)
 	{
 		temp = currLineEdges->edges[i];
 		j = i - 1;
@@ -225,7 +235,7 @@ void storeEdgeInTable(Point p1, Point p2)
 		slope = (float)d.y / (float)d.x;
 
 
-		if (d.y == 0)
+		if (p2.y == p1.y)
 			return;
 
 		tempBucket.invSlope = (float)1.0 / slope;
@@ -269,7 +279,7 @@ void updateXbySlopeInv(ScanlineEdges* currScanline)
 	for (int i = 0; i < currScanline->EdgeNum; i++)
 	{
 		currScanline->edges[i].xIntercept = 
-			currScanline->edges[i].xIntercept + currScanline->edges[i].invSlope;
+			currScanline->edges[i].xIntercept + currScanline->edges[i].xIntercept;
 	}
 }
 
@@ -285,17 +295,18 @@ void scanlineFill()
 	int coordCount = 0;
 	int xL;
 	int xR;
-	bool fillFlag;
+	bool fillFlag = 0;
 	int yMax1 = 0;
 	int yMax2 = 0;
+	int j;
 
 
 	for (int i = 0; i < winHeight; i++)
 	{
 		// Move edge from edge table into the Active edge table
-		for (int j = 0; j < edgeTable.table[i].EdgeNum; j++)
+		for (j = 0; j < edgeTable.table[i].EdgeNum; j++)
 		{
-			storeEdgeInScanlineArr(&activeScanline, *edgeTable.table[i].edges);
+			storeEdgeInScanlineArr(&activeScanline, edgeTable.table[i].edges[j]);
 		}
 
 		// Remove edges who's y = ymax. This is a redundant draw.
@@ -307,7 +318,8 @@ void scanlineFill()
 
 		// Generate fill line bounds for given scanline based on AET
 
-		int j = 0;
+		j = 0;
+		fillFlag = 0;
 		coordCount = 0;
 		xL = 0;
 		xR = 0;
@@ -346,10 +358,20 @@ void scanlineFill()
 				yMax2 = activeScanline.edges[j].yMax;
 				fillFlag = 0;
 
-				if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+
+
+				if (xL == xR)
 				{
-					xL = xR;
-					yMax1 = yMax2;
+					if (((xL == yMax1) && (xR != yMax2)) || ((xL != yMax1) && (xR == yMax2)))
+					{
+						xL = xR;
+						yMax1 = yMax2;
+					}
+					else
+					{
+						coordCount++;
+						fillFlag = 1;
+					}
 				}
 				else
 				{
@@ -357,11 +379,13 @@ void scanlineFill()
 					fillFlag = 1;
 				}
 
+
 				if (fillFlag)
 				{
 					START = Point(xL, i);
 					END = Point(xR, i);
 					lineBresN();
+					glFlush();
 				}
 			}
 			j++;
@@ -435,7 +459,7 @@ void lineBresN()
 
 	curr = START;
 
-	glClear(GL_COLOR_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT);
 
 	if (d.x > d.y) 
 	{
@@ -541,16 +565,10 @@ void polyLine()
 			END = pointArr[0];
 		}
 		lineBresN();
+		storeEdgeInTable(START, END);
 	}
-
-	glutSwapBuffers();
+	glFlush();
 	check();
-}
-
-void setPointsForLine(Point *p1, Point *p2)
-{
-	START = *p1;
-	END = *p2;
 }
 
 ////////////////////////////
