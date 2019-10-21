@@ -27,6 +27,7 @@
 #include "Point.h"
 #include "Pointf.h"
 #include "EdgeTable.h"
+#include "Polygon.h"
 
 
 using namespace std;
@@ -163,6 +164,7 @@ void draw()
 
 void storePointsFromtxt()
 {
+	Polygon *polyArr;
 	int bufsize = 256;
 	int currLine = 0;
 	bool readingPoly = false;
@@ -174,7 +176,6 @@ void storePointsFromtxt()
 	int numOfPolygons = 100;
 	int currPolygon = 0;
 	int currVertex = 0;
-	// Polygon polyArr[];
 
 
 	// Read txt file to initialize list of polygons

@@ -162,9 +162,7 @@
     <ClInclude Include="EdgeInfo.h" />
     <ClInclude Include="EdgeTable.h" />
     <ClInclude Include="emptyClass.h" />
-    <ClInclude Include="FIO.h" />
     <ClInclude Include="Point.h" />
-    <ClInclude Include="Pointf.h" />
     <ClInclude Include="Polygon.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

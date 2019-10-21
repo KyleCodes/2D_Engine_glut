@@ -23,13 +23,7 @@
     <ClInclude Include="emptyClass.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="FIO.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Point.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Pointf.h">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Polygon.h">

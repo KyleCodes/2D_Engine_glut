@@ -4,35 +4,28 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include "Pointf.h"
+#include "Point.h"
 
 using namespace std;
 
 class Polygon
 {
 public:
-	// Data
-	// array of pointfs used to describe polygon
-	vector<PointF> pointVect;
+	Point* vertexList;
 
 	// Constructor
-	Polygon()
+	Polygon() {}
+
+	Polygon(Point *vertexList)
 	{
+		this->vertexList = vertexList;
 	}
 
-	Polygon(vector<PointF> pList)
-	{
-		pointVect = pList;
-	}
 
 	// Destructor
 	~Polygon() {}
 
 	// Functions
-	void addPoint(PointF p)
-	{
-		pointVect.push_back(p);
-	}
 
 };
 
