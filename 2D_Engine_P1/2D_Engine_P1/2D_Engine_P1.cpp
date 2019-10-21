@@ -18,14 +18,17 @@
 // use fio to load polygon info into cfg object
 // pass cfg object into drawing engine
 
+#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <Windows.h>
 #include <GL/glut.h> 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <iostream>
-#include "Point.h"
-#include "Pointf.h"
+//#include "Point.h"
 #include "EdgeTable.h"
 #include "Polygon.h"
 
@@ -163,8 +166,7 @@ void draw()
 
 
 void storePointsFromtxt()
-{
-	Polygon *polyArr;
+{ 
 	int bufsize = 256;
 	int currLine = 0;
 	bool readingPoly = false;
@@ -176,6 +178,7 @@ void storePointsFromtxt()
 	int numOfPolygons = 100;
 	int currPolygon = 0;
 	int currVertex = 0;
+	Poly* polyAr;
 
 
 	// Read txt file to initialize list of polygons

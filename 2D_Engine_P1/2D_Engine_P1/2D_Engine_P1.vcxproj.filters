@@ -26,9 +26,6 @@
     <ClInclude Include="Point.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="Polygon.h">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="Config.h">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -39,6 +36,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="ScanlineEdges.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Polygon.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
