@@ -35,6 +35,9 @@ using namespace std;
 // GLOBAL VARIABLES -- all drawable objects will be stored here
 ////////////////////////////////////////////////////////////////////
 
+	// Holds file pointer
+FILE* fp;
+
 	// Hold num of pixels in the grid,size of pixel
 int gridWidth, gridHeight;
 float pixelSize;
@@ -44,8 +47,8 @@ int winHeight, winWidth;
 
 // hold points for line drawing 
 Point START, END;
-//Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
-Point pointArr[5] = { Point(20,5), Point(5,55), Point(50,90), Point(95,55), Point(80,5) };
+Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
+//Point pointArr[5] = { Point(20,5), Point(5,55), Point(50,90), Point(95,55), Point(80,5) };
 //Point pointArr[3] = { Point(5,5), Point(95,95), Point(95,5) };
 
 EdgeTable edgeTable;
@@ -53,6 +56,9 @@ ScanlineEdges activeScanline;
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
+
+// FILE
+void storePointsFromtxt();
 
 // Window
 void setupWindow();
@@ -90,6 +96,15 @@ void printMenu();
 ////////////////////////////////////////////////////////////////////
 void main(int argc, char** argv)
 {
+	////////////////////////////
+	// FILE SETUP
+	////////////////////////////
+	//fp = fopen("PolyDino.txt", "r");
+	//if (fp != NULL)
+	//	return;
+
+	
+
 	////////////////////////////
 	// WINDOW SETUP
 	////////////////////////////
@@ -146,6 +161,73 @@ void draw()
 }
 
 
+void storePointsFromtxt()
+{
+	int bufsize = 256;
+	int currLine = 0;
+	bool readingPoly = false;
+	Point currPoint = Point();
+	Point *vertexList;
+	int numOfVerticies = 0;
+	string ID = "";
+	char buf[256];
+	int numOfPolygons = 100;
+	int currPolygon = 0;
+	int currVertex = 0;
+	// Polygon polyArr[];
+
+
+	// Read txt file to initialize list of polygons
+	while (!feof(fp) && currPolygon < numOfPolygons)
+	{
+		// Gets number of polygons to be read
+		if (currLine == 0)
+		{
+			fscanf(fp, "%d", &numOfPolygons);
+			cout << "num of polygons = " << numOfPolygons << endl;
+		}
+		// Gets string ID of polygon to be read
+		else if (currLine == 1)
+		{
+			currPolygon++;
+			fscanf(fp, "%s", &ID);
+			currVertex = 0;
+		}
+		// Get the number of verticies of the polygon, initialize vertex list for it
+		else if (currLine == 2)
+		{
+			fscanf(fp, "%d", &numOfVerticies);
+			vertexList = new Point[numOfVerticies];
+			for (int i = 0; i < numOfVerticies; i++)
+			{
+				vertexList[i] = Point();
+			}
+			// initialize polygon obj here with id and num of verticies
+		}
+		// get a point of the polygon
+		else if (currLine == 3)
+		{
+			fgets(buf, bufsize, fp);
+			if (buf[0] != '\n')
+			{
+				sscanf(buf, "%d %s %d", currPoint.x, NULL, currPoint.y);
+				vertexList[currVertex] = currPoint;
+				currLine--;
+			}
+			else
+			{
+				// polygon finished reading, store vertex list, add to array, and move to next line
+				// initialize polygon
+				// add to array index currPolygon - 1 (conventional)
+				fgets(buf, bufsize, fp);
+				currLine = 0;
+			}
+		}
+		currLine++;
+	}
+}
+
+
 void setupWindow()
 {
 	gridWidth = 100;
@@ -182,7 +264,7 @@ void insertionSort(ScanlineEdges* currLineEdges)
 	EdgeInfo temp = EdgeInfo();
 	int j;
 
-	for (int i = 0; i < currLineEdges->EdgeNum; i++)
+	for (int i = 1; i < currLineEdges->EdgeNum; i++)
 	{
 		temp = currLineEdges->edges[i];
 		j = i - 1;
