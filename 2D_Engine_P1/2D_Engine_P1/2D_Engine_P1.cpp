@@ -57,12 +57,15 @@ Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
 
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
+
+Poly* polyList;
+
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
 ////////////////////////////////////////////////////////////////////
 
 // FILE
-void storePointsFromtxt();
+void storePolysFromTxt();
 
 // Window
 void setupWindow();
@@ -103,11 +106,14 @@ void main(int argc, char** argv)
 	////////////////////////////
 	// FILE SETUP
 	////////////////////////////
-	//fp = fopen("PolyDino.txt", "r");
-	//if (fp != NULL)
-	//	return;
+	fp = fopen("polyInfo.txt", "r");
+	if (fp == NULL)
+	{
+		cout << "Error opening file" << endl;
+		return;
+	}
 
-	
+	storePolysFromTxt();
 
 	////////////////////////////
 	// WINDOW SETUP
@@ -165,20 +171,26 @@ void draw()
 }
 
 
-void storePointsFromtxt()
+void storePolysFromTxt()
 { 
-	int bufsize = 256;
+	// Control vars
+	const int maxSize = 256;
 	int currLine = 0;
 	bool readingPoly = false;
 	Point currPoint = Point();
-	Point *vertexList;
+	char buf[maxSize];
+
+
+
+	// Polygon stuff
+	char ID[maxSize];
 	int numOfVerticies = 0;
-	string ID = "";
-	char buf[256];
+	Point vertexList[maxSize];
 	int numOfPolygons = 100;
-	int currPolygon = 0;
 	int currVertex = 0;
-	Poly* polyAr;
+	int currPolygon = 0;
+	Poly polyArr[maxSize];
+	char newBuf[maxSize];
 
 
 	// Read txt file to initialize list of polygons
@@ -196,39 +208,48 @@ void storePointsFromtxt()
 			currPolygon++;
 			fscanf(fp, "%s", &ID);
 			currVertex = 0;
+			cout << "currPolygon = " << currPolygon << endl;
+			cout << "ID = " << ID << endl;
 		}
 		// Get the number of verticies of the polygon, initialize vertex list for it
 		else if (currLine == 2)
 		{
 			fscanf(fp, "%d", &numOfVerticies);
-			vertexList = new Point[numOfVerticies];
+			//vertexList = new Point[numOfVerticies];
 			for (int i = 0; i < numOfVerticies; i++)
 			{
 				vertexList[i] = Point();
 			}
-			// initialize polygon obj here with id and num of verticies
+			cout << "numOfVerticies = " << numOfVerticies << endl;
 		}
 		// get a point of the polygon
 		else if (currLine == 3)
 		{
-			fgets(buf, bufsize, fp);
-			if (buf[0] != '\n')
+			//fscanf(fp, "%s", &newBuf);
+			fgets(newBuf, maxSize, fp);
+			if (newBuf[0] != '\n')
 			{
-				sscanf(buf, "%d %s %d", currPoint.x, NULL, currPoint.y);
+				sscanf(newBuf, "%d %d", &currPoint.x, &currPoint.y);
 				vertexList[currVertex] = currPoint;
+				currVertex++;
 				currLine--;
+				cout << "currVertex = " << currVertex << endl;
 			}
 			else
 			{
 				// polygon finished reading, store vertex list, add to array, and move to next line
 				// initialize polygon
 				// add to array index currPolygon - 1 (conventional)
-				fgets(buf, bufsize, fp);
+				fgets(buf, maxSize, fp);
 				currLine = 0;
+				polyArr[currPolygon - 1] = Poly(vertexList, numOfVerticies);
 			}
 		}
 		currLine++;
 	}
+	polyList = new Poly[numOfPolygons];
+	for (int i = 0; i < numOfPolygons; i++)
+		polyList[i] = polyArr[i];
 }
 
 

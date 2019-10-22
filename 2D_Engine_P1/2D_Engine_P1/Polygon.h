@@ -12,14 +12,20 @@ class Poly
 {
 public:
 	Point* vertexList;
+	int numOfVerticies;
 
 	// Constructor
 
 	Poly() {}
 
-	Poly(Point* vertexList)
+	Poly(Point* vertexBuf, int numOfVerticies)
 	{
-		this->vertexList = vertexList;
+		this->numOfVerticies = numOfVerticies;
+		vertexList = new Point[this->numOfVerticies];
+		for (int i = 0; i < this->numOfVerticies; i++)
+		{
+			vertexList[i] = vertexBuf[i];
+		}
 	}
 
 	// Destructor
