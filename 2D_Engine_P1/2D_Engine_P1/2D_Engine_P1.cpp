@@ -51,14 +51,17 @@ int winHeight, winWidth;
 
 // hold points for line drawing 
 Point START, END;
-Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
+//Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
 //Point pointArr[5] = { Point(20,5), Point(5,55), Point(50,90), Point(95,55), Point(80,5) };
 //Point pointArr[3] = { Point(5,5), Point(95,95), Point(95,5) };
 
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
 
+int numOfPolygons = 100;
 Poly* polyList;
+
+bool colorswap = false;
 
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -114,6 +117,7 @@ void main(int argc, char** argv)
 	}
 
 	storePolysFromTxt();
+	fclose(fp);
 
 	////////////////////////////
 	// WINDOW SETUP
@@ -162,12 +166,27 @@ void main(int argc, char** argv)
 
 void draw()
 {
+	/*
+	if (colorswap == 0)
+	{
+		glColor3f(1.0, 1.0, 1.0);
+		colorswap = true;
+	}
+	else
+	{
+		glColor3f(0.0, 0.0, 0.0);
+		colorswap = false;
+	}*/
+
+	glColor3f(1.0, 1.0, 1.0);
+
 	//glClear(GL_COLOR_BUFFER_BIT);
 	polyLine();
 	scanlineFill();
 	//glutPostRedisplay();
 	//glutSwapBuffers();
-	glFlush();
+	//glFlush();
+	glutSwapBuffers();
 }
 
 
@@ -186,7 +205,6 @@ void storePolysFromTxt()
 	char ID[maxSize];
 	int numOfVerticies = 0;
 	Point vertexList[maxSize];
-	int numOfPolygons = 100;
 	int currVertex = 0;
 	int currPolygon = 0;
 	Poly polyArr[maxSize];
@@ -194,7 +212,7 @@ void storePolysFromTxt()
 
 
 	// Read txt file to initialize list of polygons
-	while (!feof(fp) && currPolygon < numOfPolygons)
+	while (currPolygon <= numOfPolygons)
 	{
 		// Gets number of polygons to be read
 		if (currLine == 0)
@@ -225,26 +243,30 @@ void storePolysFromTxt()
 		// get a point of the polygon
 		else if (currLine == 3)
 		{
-			//fscanf(fp, "%s", &newBuf);
-			fgets(newBuf, maxSize, fp);
-			if (newBuf[0] != '\n')
-			{
-				sscanf(newBuf, "%d %d", &currPoint.x, &currPoint.y);
-				vertexList[currVertex] = currPoint;
-				currVertex++;
-				currLine--;
-				cout << "currVertex = " << currVertex << endl;
-			}
-			else
-			{
-				// polygon finished reading, store vertex list, add to array, and move to next line
-				// initialize polygon
-				// add to array index currPolygon - 1 (conventional)
-				fgets(buf, maxSize, fp);
-				currLine = 0;
-				polyArr[currPolygon - 1] = Poly(vertexList, numOfVerticies);
-			}
+			char t1[maxSize];
+			char t2[maxSize];
+
+			fscanf(fp, "%s %s", &t1, &t2);
+			sscanf(t1, "%d", &currPoint.x);
+			sscanf(t2, "%d", &currPoint.y);
+			vertexList[currVertex] = currPoint;
+			currVertex++;
+			currLine--;
+			cout << "currVertex = " << currVertex << endl;
+
+			if (currVertex == numOfVerticies)
+				currLine++;
 		}
+		else if(currLine == 4)
+		{
+			// polygon finished reading, store vertex list, add to array, and move to next line
+			// initialize polygon
+			// add to array index currPolygon - 1 (conventional)
+			fgets(buf, maxSize, fp);
+			currLine = 0;
+			polyArr[currPolygon - 1] = Poly(ID, vertexList, numOfVerticies);
+		}
+
 		currLine++;
 	}
 	polyList = new Poly[numOfPolygons];
@@ -656,22 +678,32 @@ void lineBres()
 
 void polyLine()
 {
-	int n = sizeof(pointArr) / sizeof(pointArr[0]);
-	for (int i = 0; i < n; i++)
+	// redesign for polyogn array
+
+	int j;
+	for (int i = 0; i < numOfPolygons; i++)
 	{
-		if (i != n - 1)
+		j = 0;
+		for (j = 0; j < polyList[i].numOfVerticies; j++)
 		{
-			START = pointArr[i];
-			END = pointArr[i + 1];
+			if ( j != polyList[i].numOfVerticies - 1)
+			{
+				START = polyList[i].vertexList[j];
+				END = polyList[i].vertexList[j + 1];
+			}
+			else {
+				START = polyList[i].vertexList[j];
+				END = polyList[i].vertexList[0];
+			}
+			lineBresN();
+			storeEdgeInTable(START, END);
 		}
-		else {
-			START = pointArr[i];
-			END = pointArr[0];
-		}
-		lineBresN();
-		//lineDDA();
-		storeEdgeInTable(START, END);
 	}
+
+
+
+
+
 	//check();
 }
 
@@ -692,11 +724,10 @@ void idle()
 /* Draws single pixel given current grid size */
 void drawPix(Point p)
 {
+
 	// Set Mode for drawing
 	glBegin(GL_POINTS);
 
-	// Set RGB color of the point
-	glColor3f(1.0, 1.0, 1.0);
 
 	// Specify vertex location
 	glVertex3f(p.x + .5, p.y + .5, 0);

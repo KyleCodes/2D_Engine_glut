@@ -11,6 +11,7 @@
 class Poly
 {
 public:
+	char* ID;
 	Point* vertexList;
 	int numOfVerticies;
 
@@ -18,8 +19,9 @@ public:
 
 	Poly() {}
 
-	Poly(Point* vertexBuf, int numOfVerticies)
+	Poly(char* ID, Point* vertexBuf, int numOfVerticies)
 	{
+		this->ID = ID;
 		this->numOfVerticies = numOfVerticies;
 		vertexList = new Point[this->numOfVerticies];
 		for (int i = 0; i < this->numOfVerticies; i++)
