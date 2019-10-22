@@ -11,7 +11,7 @@
 class Poly
 {
 public:
-	char* ID;
+	char ID[256];
 	Point* vertexList;
 	int numOfVerticies;
 
@@ -19,9 +19,9 @@ public:
 
 	Poly() {}
 
-	Poly(char* ID, Point* vertexBuf, int numOfVerticies)
+	Poly(char* IDold, Point* vertexBuf, int numOfVerticies)
 	{
-		this->ID = ID;
+		strcpy(this->ID, IDold);
 		this->numOfVerticies = numOfVerticies;
 		vertexList = new Point[this->numOfVerticies];
 		for (int i = 0; i < this->numOfVerticies; i++)

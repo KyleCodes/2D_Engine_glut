@@ -51,9 +51,8 @@ int winHeight, winWidth;
 
 // hold points for line drawing 
 Point START, END;
-//Point pointArr[4] = { Point(5,5), Point(5,95), Point(95,95), Point(95,5) };
-//Point pointArr[5] = { Point(20,5), Point(5,55), Point(50,90), Point(95,55), Point(80,5) };
-//Point pointArr[3] = { Point(5,5), Point(95,95), Point(95,5) };
+
+int lineDrawSelection;
 
 EdgeTable edgeTable;
 ScanlineEdges activeScanline;
@@ -61,7 +60,6 @@ ScanlineEdges activeScanline;
 int numOfPolygons = 100;
 Poly* polyList;
 
-bool colorswap = false;
 
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -99,7 +97,7 @@ void reshape(int width, int height);
 void check();
 
 /* Menu Funcs */
-void printMenu();
+void mainMenu();
 
 ////////////////////////////////////////////////////////////////////
 // START OF EXECUTION
@@ -118,6 +116,13 @@ void main(int argc, char** argv)
 
 	storePolysFromTxt();
 	fclose(fp);
+
+	int menuSelect = 0;
+	mainMenu();
+	cin >> menuSelect;
+	lineDrawSelection = menuSelect;
+
+
 
 	////////////////////////////
 	// WINDOW SETUP
@@ -218,7 +223,7 @@ void storePolysFromTxt()
 		if (currLine == 0)
 		{
 			fscanf(fp, "%d", &numOfPolygons);
-			cout << "num of polygons = " << numOfPolygons << endl;
+			//cout << "num of polygons = " << numOfPolygons << endl;
 		}
 		// Gets string ID of polygon to be read
 		else if (currLine == 1)
@@ -226,8 +231,8 @@ void storePolysFromTxt()
 			currPolygon++;
 			fscanf(fp, "%s", &ID);
 			currVertex = 0;
-			cout << "currPolygon = " << currPolygon << endl;
-			cout << "ID = " << ID << endl;
+			//cout << "currPolygon = " << currPolygon << endl;
+			//cout << "ID = " << ID << endl;
 		}
 		// Get the number of verticies of the polygon, initialize vertex list for it
 		else if (currLine == 2)
@@ -238,7 +243,7 @@ void storePolysFromTxt()
 			{
 				vertexList[i] = Point();
 			}
-			cout << "numOfVerticies = " << numOfVerticies << endl;
+			//cout << "numOfVerticies = " << numOfVerticies << endl;
 		}
 		// get a point of the polygon
 		else if (currLine == 3)
@@ -252,7 +257,7 @@ void storePolysFromTxt()
 			vertexList[currVertex] = currPoint;
 			currVertex++;
 			currLine--;
-			cout << "currVertex = " << currVertex << endl;
+			//cout << "currVertex = " << currVertex << endl;
 
 			if (currVertex == numOfVerticies)
 				currLine++;
@@ -264,6 +269,9 @@ void storePolysFromTxt()
 			// add to array index currPolygon - 1 (conventional)
 			fgets(buf, maxSize, fp);
 			currLine = 0;
+
+
+
 			polyArr[currPolygon - 1] = Poly(ID, vertexList, numOfVerticies);
 		}
 
@@ -271,7 +279,9 @@ void storePolysFromTxt()
 	}
 	polyList = new Poly[numOfPolygons];
 	for (int i = 0; i < numOfPolygons; i++)
+	{
 		polyList[i] = polyArr[i];
+	}
 }
 
 
@@ -779,16 +789,22 @@ void check()
 ////////////////////////////
 // MENU FUNCS
 ////////////////////////////
-void printMenu()
+void mainMenu()
 {
-	cout << "/////////////////////////////" << endl;
-	cout << "     Pick Draw Algorithm     " << endl;
+	cout << "//////////////////////////////////" << endl;
+	cout << "  Successfully Loaded Polygons     " << endl;
+	cout << "//////////////////////////////////" << endl;
 	cout << endl;
-	cout << "    1) Bresenham Line Draw   " << endl;
-	cout << "    2) DDA Line Draw         " << endl;
-	cout << "    3) ..                    " << endl;
-	cout << endl;
-	cout << "    4) Quit                  " << endl;
-	cout << endl;
+	cout << "Avaliable Entities:" << endl << endl;
+	for (int i = 0; i < numOfPolygons; i++)
+	{
+		cout << "\t-" << polyList[i].ID << endl;
+	}
+	cout << endl << endl;
+	cout << "SELECT LINE DRAW ALGORITHM" << endl << endl;
+	cout << "\t1) DDA Line Draw" << endl;
+	cout << "\t2) Bresenham Line Draw" << endl;
+	cout << endl << endl;
 	cout << "\t";
+
 }
