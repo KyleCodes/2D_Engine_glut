@@ -39,7 +39,10 @@ using namespace std;
 ////////////////////////////////////////////////////////////////////
 
 	// Holds file pointer
-FILE* fp;
+FILE* fpR;
+FILE* fpW;
+
+bool outputtedImage = false;
 
 	// Hold num of pixels in the grid,size of pixel
 int gridWidth, gridHeight;
@@ -67,7 +70,8 @@ int selectedPolygon = 0;
 ////////////////////////////////////////////////////////////////////
 
 // FILE
-void storePolysFromTxt();
+void readPolysFromTxt();
+void writePolysToText();
 
 // Window
 void setupWindow();
@@ -102,6 +106,7 @@ void reshape(int width, int height);
 void check();
 
 /* Menu Funcs */
+void metaMenu();
 void mainMenu();
 void actionMenu();
 void transformMenu();
@@ -110,22 +115,39 @@ void optionsMenu();
 ////////////////////////////////////////////////////////////////////
 // START OF EXECUTION
 ////////////////////////////////////////////////////////////////////
-void main(int argc, char** argv)
+int main(int argc, char** argv)
 {
 	////////////////////////////
 	// FILE SETUP
 	////////////////////////////
-	fp = fopen("polyInfo.txt", "r");
-	if (fp == NULL)
-	{
-		cout << "Error opening file" << endl;
-		return;
-	}
-
-	storePolysFromTxt();
-	fclose(fp);
 
 	int menuSelect = 0;
+	
+	metaMenu();
+	cin >> menuSelect;
+	if (menuSelect == 1)
+	{
+		fpR = fopen("polyInfo.txt", "r");
+		if (fpR == NULL)
+		{
+			cout << "Error opening file" << endl;
+			return 1;
+		}
+		readPolysFromTxt();
+		fclose(fpR);
+	}
+	else if (menuSelect == 2)
+	{
+		fpR = fopen("working.txt", "r");
+		if (fpR == NULL)
+		{
+			cout << "Error opening file" << endl;
+			return 1;
+		}
+		readPolysFromTxt();
+		fclose(fpR);
+	}
+	
 	mainMenu();
 	cin >> menuSelect;
 	lineDrawSelection = menuSelect;
@@ -225,6 +247,7 @@ void main(int argc, char** argv)
 	init();
 	//start glut event loop
 	glutMainLoop();
+	return 0;
 }
 
 
@@ -239,31 +262,27 @@ void main(int argc, char** argv)
 
 void draw()
 {
-	/*
-	if (colorswap == 0)
-	{
-		glColor3f(1.0, 1.0, 1.0);
-		colorswap = true;
-	}
-	else
-	{
-		glColor3f(0.0, 0.0, 0.0);
-		colorswap = false;
-	}*/
-
 	glColor3f(1.0, 1.0, 1.0);
 
-	//glClear(GL_COLOR_BUFFER_BIT);
 	polyLine();
-	//scanlineFill();
-	//glutPostRedisplay();
-	//glutSwapBuffers();
-	//glFlush();
+	if (outputtedImage == false)
+	{
+		fpW = fopen("working.txt", "w");
+		if (fpW == NULL)
+		{
+			cout << "Error opening file" << endl;
+			return 1;
+		}
+		writePolysToText();
+		outputtedImage = true;
+		fclose(fpW);
+	}
+	scanlineFill();
 	glutSwapBuffers();
 }
 
 
-void storePolysFromTxt()
+void readPolysFromTxt()
 { 
 	// Control vars
 	const int maxSize = 256;
@@ -290,14 +309,14 @@ void storePolysFromTxt()
 		// Gets number of polygons to be read
 		if (currLine == 0)
 		{
-			fscanf(fp, "%d", &numOfPolygons);
+			fscanf(fpR, "%d", &numOfPolygons);
 			//cout << "num of polygons = " << numOfPolygons << endl;
 		}
 		// Gets string ID of polygon to be read
 		else if (currLine == 1)
 		{
 			currPolygon++;
-			fscanf(fp, "%s", &ID);
+			fscanf(fpR, "%s", &ID);
 			currVertex = 0;
 			//cout << "currPolygon = " << currPolygon << endl;
 			//cout << "ID = " << ID << endl;
@@ -305,7 +324,7 @@ void storePolysFromTxt()
 		// Get the number of verticies of the polygon, initialize vertex list for it
 		else if (currLine == 2)
 		{
-			fscanf(fp, "%d", &numOfVerticies);
+			fscanf(fpR, "%d", &numOfVerticies);
 			//vertexList = new Point[numOfVerticies];
 			for (int i = 0; i < numOfVerticies; i++)
 			{
@@ -319,7 +338,7 @@ void storePolysFromTxt()
 			char t1[maxSize];
 			char t2[maxSize];
 
-			fscanf(fp, "%s %s", &t1, &t2);
+			fscanf(fpR, "%s %s", &t1, &t2);
 			sscanf(t1, "%d", &currPoint.x);
 			sscanf(t2, "%d", &currPoint.y);
 			vertexList[currVertex] = currPoint;
@@ -335,7 +354,7 @@ void storePolysFromTxt()
 			// polygon finished reading, store vertex list, add to array, and move to next line
 			// initialize polygon
 			// add to array index currPolygon - 1 (conventional)
-			fgets(buf, maxSize, fp);
+			fgets(buf, maxSize, fpR);
 			currLine = 0;
 
 
@@ -352,6 +371,39 @@ void storePolysFromTxt()
 	}
 }
 
+
+void writePolysToText()
+{
+	int currPolygon = 0;
+
+	while (currPolygon < numOfPolygons)
+	{
+		fprintf(fpW, "%d\n", numOfPolygons);
+
+		for (int i = 0; i < numOfPolygons; i++)
+		{
+			// print the id
+			fprintf(fpW, "%s\n", polyList[i].ID);
+
+			// print number of verts
+			fprintf(fpW, "%d\n", polyList[i].numOfVerticies);
+
+			// inner loop to print points
+			for (int j = 0; j < polyList[i].numOfVerticies; j++)
+			{
+				//char t1[256];
+				//char t2[256];
+				
+				//strcpy(t1, polyList[i].vertexList[j].x);
+
+				fprintf(fpW, "%d %d\n", polyList[i].vertexList[j].x, polyList[i].vertexList[j].y);
+			}
+			fprintf(fpW, "\n");
+			currPolygon++;
+		}
+
+	}
+}
 
 void setupWindow()
 {
@@ -910,13 +962,27 @@ void check()
 	if (err != GL_NO_ERROR)
 	{
 		printf("GLERROR: There was an error %s\n", gluErrorString(err));
-		exit(1);
+		return 1;
 	}
 }
 
 ////////////////////////////
 // MENU FUNCS
 ////////////////////////////
+void metaMenu()
+{
+	cout << "//////////////////////////////////" << endl;
+	cout << "         CONFIG MENU     " << endl;
+	cout << "//////////////////////////////////" << endl;
+	cout << endl;
+	cout << "Pick whether to start with original or modified polgons" << endl;
+	cout << "\nWARNING: cannot access modified polygons until after first run" << endl;
+	cout << endl;
+	cout << "\t1) Load original Polygons" << endl;
+	cout << "\t2) Load modified Polygons" << endl;
+	cout << "\t";
+}
+
 void mainMenu()
 {
 	cout << "//////////////////////////////////" << endl;
