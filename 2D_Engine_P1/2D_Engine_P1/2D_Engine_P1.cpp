@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include <iostream>
-//#include "Point.h"
 #include "EdgeTable.h"
 #include "Polygon.h"
 
@@ -60,6 +59,8 @@ ScanlineEdges activeScanline;
 int numOfPolygons = 100;
 Poly* polyList;
 
+int selectedPolygon = 0;
+
 
 ////////////////////////////////////////////////////////////////////
 // FUNCTION PROTOTYPES
@@ -72,6 +73,10 @@ void storePolysFromTxt();
 void setupWindow();
 void init();
 
+// Translation
+void translatePoly(int, int, int);
+void scalePoly(int, float, float);
+void rotatePoly(int, float);
 
 // EDGE
 void insertionSort(ScanlineEdges*);
@@ -98,6 +103,9 @@ void check();
 
 /* Menu Funcs */
 void mainMenu();
+void actionMenu();
+void transformMenu();
+void optionsMenu();
 
 ////////////////////////////////////////////////////////////////////
 // START OF EXECUTION
@@ -122,6 +130,66 @@ void main(int argc, char** argv)
 	cin >> menuSelect;
 	lineDrawSelection = menuSelect;
 
+	// Get transformation info
+	actionMenu();
+	cin >> menuSelect;
+
+	if (menuSelect == 1)
+	{
+		// transformation menu
+		transformMenu();
+		cin >> menuSelect;
+		selectedPolygon = menuSelect;
+	}
+
+	if (selectedPolygon != 0)
+	{
+		optionsMenu();
+		cin >> menuSelect;
+		switch (menuSelect)
+		{
+		case 1:
+			// translate;
+			int tx, ty;
+
+			cout << endl;
+			cout << "Enter quantities to translate Polygon:" << endl;
+			cout << endl;
+			cout << "\tX-axis: ";
+			cin >> tx;
+			cout << "\n\tY-axis: ";
+			cin >> ty;
+			translatePoly(selectedPolygon - 1, tx, ty);
+			break;
+
+		case 2:
+			// scale
+			float sx;
+			float sy;
+			cout << "Enter scale factor for polygon:" << endl;
+			cout << endl;
+			cout << "\tScale-factor-X: ";
+			cin >> sx;
+			cout << "\n\tScale-factor-Y: ";
+			cin >> sy;
+
+			scalePoly(selectedPolygon - 1, sx, sy);
+			break;
+
+		case 3:
+			// rotate
+			float theta;
+			cout << "Enter theta to rotate polygon" << endl;
+			cout << endl;
+			cout << "\tTheta: ";
+			cin >> theta;
+
+			rotatePoly(selectedPolygon - 1, theta);
+
+			break;
+
+		}
+	}
 
 
 	////////////////////////////
@@ -187,7 +255,7 @@ void draw()
 
 	//glClear(GL_COLOR_BUFFER_BIT);
 	polyLine();
-	scanlineFill();
+	//scanlineFill();
 	//glutPostRedisplay();
 	//glutSwapBuffers();
 	//glFlush();
@@ -309,6 +377,68 @@ void init()
 	// Check for errors
 	//glClear(GL_COLOR_BUFFER_BIT);
 	check();
+}
+
+////////////////////////////
+// TRANSFORMATION ALGORITHMS
+////////////////////////////
+void translatePoly(int polyNum, int tx, int ty)
+{
+	for (int i = 0; i < polyList[polyNum].numOfVerticies; i++)
+	{
+		polyList[polyNum].vertexList[i].x += tx;
+		polyList[polyNum].vertexList[i].y += ty;
+	}
+}
+
+void scalePoly(int polyNum, float sx, float sy)
+{
+	int centX;
+	int centY;
+	int totX = 0;
+	int totY = 0;
+
+	for (int i = 0; i < polyList[polyNum].numOfVerticies; i++)
+	{
+		totX += polyList[polyNum].vertexList[i].x;
+		totY += polyList[polyNum].vertexList[i].y;
+	}
+
+	centX = (int)totX/ polyList[polyNum].numOfVerticies;
+	centY = (int)totY / polyList[polyNum].numOfVerticies;
+
+	for (int i = 0; i < polyList[polyNum].numOfVerticies; i++)
+	{
+		polyList[polyNum].vertexList[i].x = (polyList[polyNum].vertexList[i].x * sy) + (centX * (1 - sx));
+		polyList[polyNum].vertexList[i].y = (polyList[polyNum].vertexList[i].y * sy) + (centY * (1 - sy));
+	}
+}
+
+void rotatePoly(int polyNum, float theta)
+{
+	int centX;
+	int centY;
+	int totX = 0;
+	int totY = 0;
+
+	for (int i = 0; i < polyList[polyNum].numOfVerticies; i++)
+	{
+		totX += polyList[polyNum].vertexList[i].x;
+		totY += polyList[polyNum].vertexList[i].y;
+	}
+
+	centX = (int)totX / polyList[polyNum].numOfVerticies;
+	centY = (int)totY / polyList[polyNum].numOfVerticies;
+
+	for (int i = 0; i < polyList[polyNum].numOfVerticies; i++)
+	{
+		polyList[polyNum].vertexList[i].x = centX + ((polyList[polyNum].vertexList[i].x - centX) * cos(theta)) 
+			- ((polyList[polyNum].vertexList[i].y - centY) * sin(theta));
+
+		polyList[polyNum].vertexList[i].y = centY + ((polyList[polyNum].vertexList[i].x - centX) * sin(theta))
+			+ ((polyList[polyNum].vertexList[i].y - centY) * cos(theta));
+	}
+
 }
 
 ////////////////////////////
@@ -705,16 +835,14 @@ void polyLine()
 				START = polyList[i].vertexList[j];
 				END = polyList[i].vertexList[0];
 			}
-			lineBresN();
+
+			if (lineDrawSelection == 1)
+				lineDDA;
+			if (lineDrawSelection == 2)
+				lineBresN();
 			storeEdgeInTable(START, END);
 		}
 	}
-
-
-
-
-
-	//check();
 }
 
 ////////////////////////////
@@ -804,7 +932,48 @@ void mainMenu()
 	cout << "SELECT LINE DRAW ALGORITHM" << endl << endl;
 	cout << "\t1) DDA Line Draw" << endl;
 	cout << "\t2) Bresenham Line Draw" << endl;
-	cout << endl << endl;
+	cout << endl;
 	cout << "\t";
 
+}
+
+void actionMenu()
+{
+	cout << "//////////////////////////////////" << endl;
+	cout << "          ACTION MENU     " << endl;
+	cout << "//////////////////////////////////" << endl;
+	cout << endl;
+	cout << "\t1) Apply Transformations to a Polygon" << endl;
+	cout << "\t2) Draw Polygons" << endl;
+	cout << endl;
+	cout << "\t";
+}
+
+void transformMenu()
+{
+	cout << "//////////////////////////////////" << endl;
+	cout << "       TRANSFORMATION MENU     " << endl;
+	cout << "//////////////////////////////////" << endl;
+	cout << endl;
+	cout << "Select a Polygon to modify:" << endl;
+	cout << endl;
+	for (int i = 0; i < numOfPolygons; i++)
+	{
+		cout << "\t" << (i + 1) << ") " << polyList[i].ID << endl;
+	}
+	cout << endl;
+	cout << "\t";
+}
+
+void optionsMenu()
+{
+	cout << "//////////////////////////////////" << endl;
+	cout << "       OPTIONS MENU     " << endl;
+	cout << "//////////////////////////////////" << endl;
+	cout << endl;
+	cout << "Select a transformation to apply to: " << polyList[selectedPolygon].ID << endl;
+	cout << endl;
+	cout << "\t1) Translate" << endl;
+	cout << "\t2) Scale" << endl;
+	cout << "\t3) Rotate" << endl;
 }
