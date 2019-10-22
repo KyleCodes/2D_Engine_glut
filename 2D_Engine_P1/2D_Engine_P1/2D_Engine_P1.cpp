@@ -30,6 +30,7 @@
 #include <iostream>
 #include "EdgeTable.h"
 #include "Polygon.h"
+#include <string>
 
 
 using namespace std;
@@ -271,11 +272,15 @@ void draw()
 		if (fpW == NULL)
 		{
 			cout << "Error opening file" << endl;
-			return 1;
+			exit(1);
 		}
 		writePolysToText();
 		outputtedImage = true;
 		fclose(fpW);
+	}
+	else
+	{
+		idle();
 	}
 	scanlineFill();
 	glutSwapBuffers();
@@ -962,7 +967,7 @@ void check()
 	if (err != GL_NO_ERROR)
 	{
 		printf("GLERROR: There was an error %s\n", gluErrorString(err));
-		return 1;
+		exit(1);
 	}
 }
 
